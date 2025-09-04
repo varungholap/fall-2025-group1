@@ -1,222 +1,133 @@
-# 🎓 Welcome to the Capstone Course!
 
-## 👋 Hello Students!
-
-Welcome to an exciting journey of innovation and discovery! This capstone course represents the culmination of your academic experience, where you'll apply everything you've learned to solve real-world problems and create meaningful solutions.
-
-## 📋 Important Setup Instructions
-
-### 🤝 Adding Me as a Collaborator
-
-**CRITICAL FIRST STEP:** You must add me as a collaborator to your GitHub repository so I can monitor your progress and provide guidance.
-
-**My GitHub Username:** `amir-capstone-jafari`
-
-#### How to Add Me as a Collaborator:
-1. Navigate to your project repository on GitHub
-2. Click on **Settings** (top menu bar of your repo)
-3. Click on **Collaborators** in the left sidebar
-4. Click **Add people**
-5. Enter my username: `amir-capstone-jafari`
-6. Select **Write** or **Admin** access level
-7. Click **Add amir-capstone-jafari to this repository**
-
-⚠️ **Note:** I will not be able to access your project or provide feedback until you complete this step!
-
-## 📁 Project Naming Convention
-
-Your repository name **MUST** follow this specific pattern:
-
-### Format: `[semester]-[year]-[group#]`
-
-**Examples:**
-- `fall-2025-group1`
-- `fall-2025-group2`
-- `spring-2026-group1`
-- `summer-2025-group3`
-
-### Naming Rules:
-- Use **lowercase letters only**
-- Use **hyphens** to separate words (no spaces or underscores)
-- Include the **full year** (e.g., 2025, not 25)
-- Use **group** followed by your group number
-
-## 🏗️ Project Structure Template
-
-Your project should follow the folder structure outlined in the sample capstone project. 
-
-### 📂 Repository Usage Instructions:
-
-**IMPORTANT:** Please note the distinction between two repositories:
-
-1. **For Collaboration:** Add `amir-capstone-jafari` as a collaborator to YOUR project repository
-2. **For Template:** Use the `amir-jafari` repository structure as your template
-
-**📂 Template Repository:** [amir-jafari Capstone Structure](https://github.com/amir-jafari/Capstone/tree/main/Sample_Capstone)
-
-### 📋 Required Folder Structure:
-
-Your project **MUST** follow this exact folder structure:
-
-```
-.
-├── src
-│   ├── component          # All classes and functions need to be here
-│   ├── docs              # Documentation files
-│   ├── shellscripts      # Shell scripts for automation
-│   └── tests             # Unit tests and test files
-├── demo
-│   └── fig               # Demo figures and images
-├── reports
-│   ├── Latex_report
-│   │   └── fig           # Figures for LaTeX report
-│   ├── Markdown_Report   # Markdown format reports
-│   ├── Progress_Report   # Weekly progress reports
-│   │   └── Markdown_CheatSheet
-│   └── Word_Report       # Word format reports
-├── presentation          # Presentation materials
-├── research_paper
-│   ├── Latex
-│   │   └── Fig          # Figures for research paper
-│   └── Word             # Word format research paper
-└── cookbooks            # Jupyter notebooks and tutorials
-```
-
-### 📁 Folder Descriptions:
-
-- **src/component:** All classes and functions need to be here
-- **src/docs:** Documentation and API references  
-- **src/tests:** Unit tests and testing frameworks
-- **demo/fig:** Demonstration figures, screenshots, and visual materials
-- **reports:** All project reports in various formats
-- **presentation:** Presentation slides and materials
-- **research_paper:** Academic paper in LaTeX and Word formats
-- **cookbooks:** Jupyter notebooks, tutorials, and code examples
+# Capstone Proposal
+## Health-Aware School Meal Recommendations with Contextual Bandits
+### Proposed by: Tyler Wallett
+#### Email: twallett@gwu.edu
+#### Advisor: Amir Jafari
+#### The George Washington University, Washington DC  
+#### Data Science Program
 
 
+## 1 Objective:  
+ 
+            The goal of this project is to develop a free and open source analysis and recommendation tool that can be used 
+            by non-technical school nutritionists, cafeteria staff, and researchers to optimize school meal offerings for 
+            both student preference and healthiness. The tool will leverage Contextual Multi-Armed Bandit (CMAB) algorithms 
+            to recommend meals that balance popularity and nutrition. Our project is affiliated with Fairfax County Public 
+            Schools (FCPS), which provides the historical meal sales data used in this project. Built by data scientists, the 
+            tool is designed to be used by non-technical stakeholders, empowering them to make data-driven decisions to 
+            improve student nutrition while maintaining participation.
 
-## 📊 Project Management Requirements
+            Develop or refine a methodological approach using CMAB to recommend meals based on contextual features such as 
+            school, time of day, and day of the week, while incorporating a healthiness weighting into the reward function.  
 
-I will be monitoring your project management practices through GitHub. Please ensure:
+            Integrate this CMAB-based recommendation system into an open source library for school nutrition 
+            research, so that future stakeholders can use your methodology to make healthier, data-informed decisions. 
+            
 
-### 🎯 Required GitHub Features:
-- [ ] **Issues:** Use for tracking bugs, features, and tasks
-- [ ] **Projects/Boards:** Organize your workflow (Kanban style recommended)
-- [ ] **Milestones:** Set clear project milestones with deadlines
-- [ ] **Pull Requests:** Use for code reviews and feature integration
-- [ ] **Regular Commits:** Commit frequently with descriptive messages
-- [ ] **Branches:** Use feature branches for development
+![Figure 1: Example figure](2025_Fall_5.png)
+*Figure 1: Caption*
 
-### 📋 GitHub Project Board Setup
+## 2 Dataset:  
 
-**REQUIRED:** You must set up a GitHub Project Board and add me as a collaborator so I can monitor your project progress.
+            FCPS Sales Data: Box Folder Link
+            
 
-#### Step-by-Step Project Board Setup:
+## 3 Rationale:  
 
-1. **Create a Project Board:**
-   - Navigate to your repository on GitHub
-   - Click on the **Projects** tab (next to Issues, Pull requests, etc.)
-   - Click **New project**
-   - Choose **Board** template (Kanban style)
-   - Name your project board (e.g., "Capstone Project Management")
-   - Add a description of your project
+            School nutrition is a critical factor in student health, academic performance, and long-term well-being. However, 
+            cafeteria participation is often influenced by student preferences for popular but less healthy food options, 
+            making it challenging for nutritionists to balance meal appeal with nutritional goals. Data-driven approaches 
+            can help address this challenge, but many school staff and researchers lack the technical expertise to analyze 
+            meal sales and optimize offerings at scale. 
 
-2. **Add Me as Project Collaborator:**
-   - In your project board, click on the **Settings** icon (gear icon)
-   - Go to **Manage access** or **Collaborators**
-   - Click **Add people**
-   - Enter my username: `amir-capstone-jafari`
-   - Give me **Admin** or **Write** access to the project board
-   - Click **Add** to confirm
+            Students can apply their Data Science and Reinforcement Learning skills to develop a methodology using 
+            Contextual Multi-Armed Bandits (CMAB) that recommends meals based on both popularity and healthiness, 
+            tailored to each school and time of day. By integrating this methodology into an open source tool, non-technical 
+            users will be empowered to make evidence-based decisions that improve student nutrition while maintaining 
+            participation rates. In doing so, students contribute to healthier school environments and provide a scalable 
+            framework for future research in data-driven school nutrition planning.
+            
 
-3. **Set Up Project Columns:**
-   - Create these columns in your project board:
-     - **📝 To Do** - Tasks to be started
-     - **🔄 In Progress** - Currently working on
-     - **👀 In Review** - Waiting for review/approval
-     - **✅ Done** - Completed tasks
+## 4 Approach:  
 
-4. **Create Project Tickets/Issues:**
-   - Break down your project into manageable tasks
-   - Create GitHub Issues for each task
-   - Add these issues to your project board
-   - Assign issues to team members
-   - Set due dates and priorities
+            [Understanding the Reinforcement Learning (RL) Framework] 
+            Students will learn the RL framework, focusing on Contextual Multi-Armed Bandits (CMAB), including:
 
-#### 🎫 Ticket Management Best Practices:
-- **Clear Titles:** Use descriptive titles for each ticket
-- **Detailed Descriptions:** Include acceptance criteria and requirements
-- **Labels:** Use labels to categorize tickets (bug, feature, documentation, etc.)
-- **Assignees:** Assign each ticket to a team member
-- **Due Dates:** Set realistic deadlines for each task
-- **Progress Updates:** Move tickets between columns as work progresses
+            - Understanding CMAB assumptions and limitations: stationarity, independence, exploration-exploitation trade-off.
+            - State space design: selecting relevant contextual features (e.g., school, time_of_day, day_of_week).
+            - Action space design: defining meal options as arms in the bandit framework (e.g. item_id).
+            - Reward design: formulating reward signals based on sales data and health penalty factor (reward = total_meals_served + λ * healthiness_score_of_item).
+            - Algorithm selection: evaluating CMAB algorithms (e.g. LinUCB).
 
-### 📈 Progress Tracking:
-- Create weekly progress reports in your `reports/Progress_Report/` folder
-- Update your project board regularly (at least twice per week)
-- Tag me in important discussions using `@amir-capstone-jafari`
-- Move tickets through the board columns as work progresses
-- Add comments to tickets when significant progress is made
+            [`utils/env.py`]
+            Students will implement the CMAB environment to simulate meal recommendation scenarios using the FCPS dataset:
 
-⚠️ **Important:** I must be able to see your project board to monitor your team's progress and provide feedback!
+            - load_data() -> func: Load preprocessed FCPS sales CSV.
+            - get_states() -> func: Return matrix (m × n) where m = time steps, n = contextual features.
+            - get_actions() -> func: Return matrix (m × p) where m = time steps, p = meal options.
+            - get_health_scores() -> func: Vector (p × 1) with healthiness score for each meal option.
 
-## 🚀 Getting Started Checklist
+            [`model.py` & `main.py`]
+            Students will implement the LinUCB algorithm and related methods for training and inference:
 
-Before diving into your project, make sure you've completed:
+            - LinUCB() & __init__() -> class: Initialize CMAB model.
+            - self.train() -> method/func: Train the model on observed rewards.
+            - self.action() -> method/func: Select a valid meal given the current context, considering only meals available at that time step (mask).
+            - self.calculate_reward() (sometimes called bandit()) -> method/func: Compute reward for the chosen action.
+            - self.update() -> method/func: Update model parameters based on observed reward.
+            - self.reset() -> method/func: Reset the model to initial state.
+            - self.save() -> method/func: Save model parameters.
+            - self.recommend() -> method/func: Provide meal recommendations based on learned policy.
 
-- [ ] Created your repository with the correct naming convention
-- [ ] Added `amir-capstone-jafari` as a collaborator
-- [ ] Set up the recommended folder structure
-- [ ] Created initial project documentation
-- [ ] Set up GitHub project board
-- [ ] Created your first milestone
-- [ ] Added a comprehensive README for your specific project
+            - `main.py` - train and roughly evaluate the CMAB model using the custom environment and FCPS dataset.
 
-## 📞 Communication & Support
+            [`utils/metrics.py` & `utils/plot.py`]
+            Students will learn how to measure performance and visualize results:
 
-### Getting Help:
-- **GitHub Issues:** Tag me in issues that need instructor input
-- **Discussion:** Use GitHub Discussions for broader questions
-- **Office Hours:** Check course syllabus for scheduled times
+            - calulate_regret() -> func: Compute regret for evaluation.
+            - calculate_cumulative_reward() -> func: Compute cumulative reward over time.
 
-### Response Time:
-- I aim to respond to GitHub notifications within 24-48 hours
-- For urgent matters, please email me directly
+            - plot_top_meals() -> func: Visualize top-performing meals.
+            - plot_recommendations() -> func: Plot recommendations over time or by context.
 
-## 🎯 Success Tips
+            [`benchmark.py`]
+            Students will learn how to run systematic experiments and analyze results:
 
-1. **Start Early:** Begin your project setup immediately
-2. **Commit Often:** Small, frequent commits are better than large, infrequent ones
-3. **Document Everything:** Good documentation is crucial for project success
-4. **Collaborate Effectively:** Use GitHub's collaborative features
-5. **Ask Questions:** Don't hesitate to reach out when you need help
+            - Run multiple experiments with different λ values.
+            - Hyperparameter tuning.
+            - bench_results_to_csv() -> func: Save benchmarking results to CSV for analysis.
 
-## 📺 GitHub Page Requirements
+            
 
-### 🎬 Project Showcase Video
+## 5 Timeline:  
 
-**REQUIRED:** Every group must create a one-minute video summarizing your entire project.
+            [Understanding the Reinforcement Learning (RL) Framework] 1 week
+            [`utils/env.py`] 2 weeks
+            [`main.py` & `model.py`] 5 weeks
+            [`utils/metrics.py` & `utils/plot.py`] 2 weeks (start writting research paper here)
+            [`benchmark.py`] 2 weeks
+            
 
-#### Video Requirements:
-- **Duration:** Exactly 1 minute maximum
-- **Content:** Showcase the main points of your project
-- **Purpose:** Provide a quick overview for visitors to your GitHub page
-- **Format:** Should be engaging and demonstrate your project's key features
 
-#### Where to Include:
-- Add the video to your main README.md file on your repository's GitHub page
-- Place the video file in your `demo/fig/` folder
-- Use the following markdown format in your README:
+## 6 Expected Number Students:  
 
-![demo.gif](demo/fig/demo.gif)
+            Given the scope and complexity of the project, it is recommended to have 2-3 students working collaboratively.
+            
 
-⚠️ **Note:** This video serves as the first impression of your project for anyone visiting your GitHub repository!
+## 7 Possible Issues:  
 
-## 📚 Resources
+            - Implementing Contextual Multi-Armed Bandits (CMAB) can be complex for students.  
+            - Designing the state and action spaces correctly may be challenging.  
+            - Shaping the reward function to balance popularity and healthiness requires careful consideration.  
+            - Handling unavailable meal options at each time step requires proper action masking.  
+            - Debugging interactions between the environment and the bandit model can be difficult.  
+            - Accurately computing cumulative rewards and regret is essential and may be error-prone.  
+            - Data preprocessing and encoding categorical features from the FCPS dataset may present challenges.
+            
 
-- [GitHub Collaboration Guide](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests)
-- [amir-jafari Template Repository](https://github.com/amir-jafari/Capstone/tree/main/Sample_Capstone)
-- [Markdown Guide](https://www.markdownguide.org/)
 
----
-
+## Contact
+- Author: Amir Jafari
+- Email: [ajafari@gwu.edu](mailto:ajafari@gwu.edu)
+- GitHub: [None](https://github.com/None)
