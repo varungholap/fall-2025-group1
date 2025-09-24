@@ -21,7 +21,8 @@ def main():
 
     action_groups = get_actions(df)
 
-    for ep in range(10):
+    for ep in range(100):
+        epoch_reward = 0.0 
         for actions in action_groups:
             if actions.empty:
                 continue
@@ -29,8 +30,8 @@ def main():
             a = model.select(X)
             reward = compute_reward(actions.iloc[a], rw)
             model.update(X[a], reward)
-            total_reward += reward
-        print(f"Epoch {ep+1}: total_reward={total_reward:.3f}")
+            epoch_reward += reward
+        print(f"Epoch {ep+1}: reward={epoch_reward:.3f}")
 
 
 if __name__ == "__main__":
