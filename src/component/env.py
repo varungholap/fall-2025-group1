@@ -12,20 +12,11 @@ def get_data(csv_path: str, dayfirst: bool = True) -> pd.DataFrame:
     - Coerces numeric-looking strings to numbers.
     - Builds consumptions/served rates if missing.
     """
-    # Specify dtype for column 2 to resolve the DtypeWarning.
-    # Reading it as a string is safe because subsequent code handles
-    # numeric conversion where necessary.
     df = pd.read_csv(csv_path, dtype={2: str})
-
-    # Defensively rename "School Name" to "School_Name" only if "School_Name" doesn't already exist.
-    # This prevents creating duplicate columns if both spellings are in the source file.
     if "School Name" in df.columns and "School_Name" not in df.columns:
         df.rename(columns={"School Name": "School_Name"}, inplace=True)
-
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=dayfirst).dt.date.astype(str)
-
-    # Numeric coercion helper
     def _to_num(col: str):
         if col not in df.columns:
             return
@@ -109,8 +100,7 @@ def get_actions(df: pd.DataFrame,
 
 @dataclass
 class RewardWeights:
-    # Higher discarded/production costs should reduce reward; consumption should increase reward
-    w_production: float = 1.0
+    w_production: float = 0.0
     w_discarded: float = 1.0
     w_consumption: float = 1.0
 
@@ -125,7 +115,76 @@ def compute_reward(row: pd.Series, rw: RewardWeights) -> float:
     pop = float(row.get("served_rate", row.get("consumption_rate", 0.0)))
     return float(-rw.w_production * prod - rw.w_discarded * disc + rw.w_consumption * pop)
 
+from pprint import pprint
 
-d = get_data("data/Production Data.csv")
-print(get_features(d))
-print(get_actions(d))
+def pretty_print_features(feat_tuple, preview_rows: int = 5):
+    """Nicely print the outputs of get_features()."""
+    df, X_cols, means, stds = feat_tuple
+
+    print("\n=== Preview of processed DataFrame ===")
+    print(df.head(preview_rows).to_string(index=False))
+
+    print("\n=== Feature columns used (X) ===")
+    pprint(X_cols, width=100)
+
+    print("\n=== Feature means ===")
+    for k in sorted(means.keys()):
+        v = means[k]
+        try:
+            v = float(v)
+            print(f"{k:32s}: {v: .6g}")
+        except Exception:
+            print(f"{k:32s}: {v}")
+
+    print("\n=== Feature std devs ===")
+    for k in sorted(stds.keys()):
+        v = stds[k]
+        try:
+            v = float(v)
+            print(f"{k:32s}: {v: .6g}")
+        except Exception:
+            print(f"{k:32s}: {v}")
+
+
+def pretty_print_action_groups(groups, show_groups: int = 3, rows_per_group: int = 5):
+    print("\n=== Action groups summary ===")
+    print(f"Total groups (rounds): {len(groups)}")
+
+    # Peek a few groups
+    for i, g in enumerate(groups[:show_groups], start=1):
+        school = str(g["School_Name"].iloc[0]) if "School_Name" in g.columns and not g.empty else "?"
+        date   = str(g["Date"].iloc[0])        if "Date" in g.columns and not g.empty else "?"
+        print(f"\n-- Group {i}: School={school} | Date={date} | actions={len(g)} --")
+
+        cols_to_show = [
+            c for c in [
+                "Identifier", "Meal_Type", "Offered_Total", "Served_Total",
+                "consumption_rate", "served_rate",
+                "Production_Cost_Total", "Discarded_Cost",
+                "Left_Over_Total", "Left_Over_Percent_of_Offered",
+                "Subtotal_Cost"
+            ] if c in g.columns
+        ]
+
+        # show first few rows of the group
+        if len(cols_to_show) == 0:
+            print(g.head(rows_per_group).to_string(index=False))
+        else:
+            print(g[cols_to_show].head(rows_per_group).to_string(index=False))
+
+if __name__ == "__main__":
+    import os
+
+    csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "data",
+        "Production Data.csv"
+    )
+
+    d = get_data(csv_path)
+    feat_tuple = get_features(d)
+    pretty_print_features(feat_tuple, preview_rows=5)
+
+    groups = get_actions(feat_tuple[0])
+    pretty_print_action_groups(groups, show_groups=3, rows_per_group=5)
+
