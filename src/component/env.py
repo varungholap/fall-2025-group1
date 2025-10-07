@@ -1,102 +1,30 @@
-from __future__ import annotations
-import pandas as pd
 import numpy as np
+import pandas as pd
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional
+from typing import List, Optional
 
 
-def get_data(csv_path: str, dayfirst: bool = True) -> pd.DataFrame:
-    """Load and lightly normalize the meal dataframe.
-    - Parses dates (day-first by default because your sample was 01-05-2025, Thursday).
-    - Renames common variants.
-    - Coerces numeric-looking strings to numbers.
-    - Builds consumptions/served rates if missing.
+def generate_environment_data(n_rounds: int = 10, n_arms: int = 5, seed: Optional[int] = 42):
     """
-    df = pd.read_csv(csv_path, dtype={2: str})
-    if "School Name" in df.columns and "School_Name" not in df.columns:
-        df.rename(columns={"School Name": "School_Name"}, inplace=True)
-    if "Date" in df.columns:
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=dayfirst).dt.date.astype(str)
-    def _to_num(col: str):
-        if col not in df.columns:
-            return
-        if pd.api.types.is_numeric_dtype(df[col]):
-            return
-        df[col] = (
-            df[col].astype(str)
-            .str.replace(",", "", regex=False)
-            .str.replace("$", "", regex=False)
-            .str.replace("%", "", regex=False)
-        )
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    numeric_core = [
-        "Offered_Total", "Served_Total", "Discarded_Cost", "Production_Cost_Total",
-        "Planned_Total", "Left_Over_Total", "Left_Over_Percent_of_Offered", "Subtotal_Cost",
-        "offered_safe", "waste_rate", "cost_per_served", "served_rate", "dow", "month",
-    ]
-    for c in numeric_core:
-        _to_num(c)
-
-    # Derived rates
-    df["consumption_rate"] = (df["Served_Total"] / df["Offered_Total"].replace(0, np.nan)).fillna(0.0).clip(0, 1)
-    if "served_rate" in df.columns:
-        df["served_rate"] = df["served_rate"].fillna(df["consumption_rate"])
-    else:
-        df["served_rate"] = df["consumption_rate"]
-
-    return df
-
-
-def get_features(df: pd.DataFrame,
-                 normalize: bool = True,
-                 one_hot_categoricals: Optional[List[str]] = None) -> Tuple[pd.DataFrame, List[str], Dict[str, float], Dict[str, float]]:
-    """Create feature columns and return (df_enriched, X_cols, means, stds).
-    - Adds one-hots for categoricals (default: Meal_Type if present).
-    - Z-score normalizes numeric columns (keeps means/stds).
+    Generate synthetic contextual bandit environment using NumPy.
+    Each round has several arms with contextual features.
     """
-    # Default numeric feature set
-    base_numeric = [
-        "Offered_Total", "Served_Total", "consumption_rate",
-        "Production_Cost_Total", "Discarded_Cost", "Left_Over_Total",
-        "Left_Over_Percent_of_Offered", "Subtotal_Cost",
-    ]
-    optional_numeric = [c for c in ["offered_safe", "waste_rate", "cost_per_served", "served_rate", "dow", "month"] if c in df.columns]
-    feature_cols = base_numeric + optional_numeric
+    rng = np.random.default_rng(seed)
+    rounds = []
 
-    # One-hot categoricals
-    if one_hot_categoricals is None:
-        one_hot_categoricals = [c for c in ["Meal_Type"] if c in df.columns]
-    if one_hot_categoricals:
-        dummies = [pd.get_dummies(df[c].astype("category"), prefix=c, dummy_na=False) for c in one_hot_categoricals]
-        if dummies:
-            dummies_df = pd.concat(dummies, axis=1)
-            df = pd.concat([df, dummies_df], axis=1)
-            feature_cols += list(dummies_df.columns)
+    for _ in range(n_rounds):
+        # Features: [Offered_Total, Served_Total, consumption_rate, Production_Cost_Total, Discarded_Cost]
+        offered = rng.integers(100, 300, size=n_arms)
+        served = offered * rng.uniform(0.5, 1.0, size=n_arms)
+        consumption_rate = served / offered
+        production_cost = rng.uniform(1.0, 3.0, size=n_arms) * offered
+        discarded_cost = rng.uniform(0.0, 1.0, size=n_arms) * (offered - served)
 
-    means, stds = {}, {}
-    X_cols: List[str] = []
-    for c in feature_cols:
-        if c not in df.columns:
-            continue
-        if normalize and pd.api.types.is_numeric_dtype(df[c]):
-            m, s = df[c].astype(float).mean(), df[c].astype(float).std(ddof=0)
-            means[c] = m
-            stds[c] = s if s > 1e-8 else 1.0
-            df[c + "_norm"] = (df[c] - means[c]) / stds[c]
-            X_cols.append(c + "_norm")
-        else:
-            X_cols.append(c)
+        X = np.stack([offered, served, consumption_rate, production_cost, discarded_cost], axis=1)
+        rounds.append(X)
 
-    return df, X_cols, means, stds
-
-
-def get_actions(df: pd.DataFrame,
-                groupby_cols: Tuple[str, str] = ("School_Name", "Date"),
-                min_actions: int = 2) -> List[pd.DataFrame]:
-    """Group rows into decision rounds by (School_Name, Date) and filter for at least min_actions."""
-    rounds = [g for _, g in df.groupby(list(groupby_cols), dropna=False) if len(g) >= min_actions]
     return rounds
+
 
 @dataclass
 class RewardWeights:
@@ -105,86 +33,43 @@ class RewardWeights:
     w_consumption: float = 1.0
 
 
-def compute_reward(row: pd.Series, rw: RewardWeights) -> float:
+def compute_reward(x: np.ndarray, rw: RewardWeights) -> float:
     """
-    Default: minimize cost & waste; reward consumption.
-    R = -w_prod * Production_Cost_Total - w_disc * Discarded_Cost + w_cons * popularity
+    Compute reward for a selected arm vector.
+    Columns: [Offered_Total, Served_Total, consumption_rate, Production_Cost_Total, Discarded_Cost]
     """
-    prod = float(row.get("Production_Cost_Total", 0.0))
-    disc = float(row.get("Discarded_Cost", 0.0))
-    pop = float(row.get("served_rate", row.get("consumption_rate", 0.0)))
-    return float(-rw.w_production * prod - rw.w_discarded * disc + rw.w_consumption * pop)
-
-from pprint import pprint
-
-def pretty_print_features(feat_tuple, preview_rows: int = 5):
-    """Nicely print the outputs of get_features()."""
-    df, X_cols, means, stds = feat_tuple
-
-    print("\n=== Preview of processed DataFrame ===")
-    print(df.head(preview_rows).to_string(index=False))
-
-    print("\n=== Feature columns used (X) ===")
-    pprint(X_cols, width=100)
-
-    print("\n=== Feature means ===")
-    for k in sorted(means.keys()):
-        v = means[k]
-        try:
-            v = float(v)
-            print(f"{k:32s}: {v: .6g}")
-        except Exception:
-            print(f"{k:32s}: {v}")
-
-    print("\n=== Feature std devs ===")
-    for k in sorted(stds.keys()):
-        v = stds[k]
-        try:
-            v = float(v)
-            print(f"{k:32s}: {v: .6g}")
-        except Exception:
-            print(f"{k:32s}: {v}")
+    production_cost = x[3]
+    discarded_cost = x[4]
+    consumption_rate = x[2]
+    reward = -rw.w_production * production_cost - rw.w_discarded * discarded_cost + rw.w_consumption * consumption_rate
+    return float(reward)
 
 
-def pretty_print_action_groups(groups, show_groups: int = 3, rows_per_group: int = 5):
-    print("\n=== Action groups summary ===")
-    print(f"Total groups (rounds): {len(groups)}")
+def describe_environment(rounds: List[np.ndarray], show_rounds: int = 3):
+    """
+    Nicely print all arms, features, and their dataset per round.
+    Each round is treated as one 'context' (decision situation).
+    """
+    feature_names = [
+        "Offered_Total",
+        "Served_Total",
+        "consumption_rate",
+        "Production_Cost_Total",
+        "Discarded_Cost",
+    ]
 
-    # Peek a few groups
-    for i, g in enumerate(groups[:show_groups], start=1):
-        school = str(g["School_Name"].iloc[0]) if "School_Name" in g.columns and not g.empty else "?"
-        date   = str(g["Date"].iloc[0])        if "Date" in g.columns and not g.empty else "?"
-        print(f"\n-- Group {i}: School={school} | Date={date} | actions={len(g)} --")
+    print(f"\n=== ENVIRONMENT SUMMARY ===")
+    print(f"Total rounds (contexts): {len(rounds)}")
+    print(f"Each round has {rounds[0].shape[0]} arms and {rounds[0].shape[1]} features\n")
 
-        cols_to_show = [
-            c for c in [
-                "Identifier", "Meal_Type", "Offered_Total", "Served_Total",
-                "consumption_rate", "served_rate",
-                "Production_Cost_Total", "Discarded_Cost",
-                "Left_Over_Total", "Left_Over_Percent_of_Offered",
-                "Subtotal_Cost"
-            ] if c in g.columns
-        ]
+    for i, X in enumerate(rounds[:show_rounds], start=1):
+        print(f"--- Round {i} / Context {i} ---")
+        df = pd.DataFrame(X, columns=feature_names)
+        df.index.name = "Arm_ID"
+        print(df.to_string(index=True))
+        print("-" * 70)
 
-        # show first few rows of the group
-        if len(cols_to_show) == 0:
-            print(g.head(rows_per_group).to_string(index=False))
-        else:
-            print(g[cols_to_show].head(rows_per_group).to_string(index=False))
 
 if __name__ == "__main__":
-    import os
-
-    csv_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        "data",
-        "Production Data.csv"
-    )
-
-    d = get_data(csv_path)
-    feat_tuple = get_features(d)
-    pretty_print_features(feat_tuple, preview_rows=5)
-
-    groups = get_actions(feat_tuple[0])
-    pretty_print_action_groups(groups, show_groups=3, rows_per_group=5)
-
+    env = generate_environment_data(n_rounds=5, n_arms=4)
+    describe_environment(env)

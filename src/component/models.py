@@ -1,41 +1,33 @@
-# src/component/models.py
-
-from __future__ import annotations
 import numpy as np
-import pandas as pd
-from typing import Optional
-
-# reuse reward logic from env.py
-from .env import compute_reward, RewardWeights
+from typing import List, Optional
+from env import compute_reward, RewardWeights
 
 
 class LinUCB:
     """
-    Minimal LinUCB implementation for contextual bandits.
+    LinUCB contextual bandit algorithm (NumPy-based).
     """
     def __init__(self, alpha: float = 1.5, d: Optional[int] = None):
         self.alpha = alpha
         self.d = d
-        self.A: Optional[np.ndarray] = None   # (d x d)
-        self.b: Optional[np.ndarray] = None   # (d x 1)
+        self.A = None
+        self.b = None
         self.initialized = False
 
-    def _maybe_init(self, d: int) -> None:
+    def _maybe_init(self, d: int):
         if not self.initialized:
-            self.d = d if self.d is None else self.d
-            self.A = np.eye(self.d, dtype=float)
-            self.b = np.zeros((self.d, 1), dtype=float)
+            self.d = d
+            self.A = np.eye(self.d)
+            self.b = np.zeros((self.d, 1))
             self.initialized = True
 
     def select(self, X: np.ndarray) -> int:
         """
-        Choose an action index from feature matrix X (K x D).
+        Select the best arm index for the given round.
+        X: (n_arms x n_features)
         """
         K, D = X.shape
         self._maybe_init(D)
-
-        if self.A is None or self.b is None:
-            raise RuntimeError("Model not initialized properly.")
 
         A_inv = np.linalg.inv(self.A)
         theta = A_inv @ self.b
@@ -43,67 +35,50 @@ class LinUCB:
         scores = []
         for k in range(K):
             x = X[k].reshape(-1, 1)
-            mu = float(theta.T @ x)                     # mean estimate
-            var = float(x.T @ A_inv @ x)
-            var = max(var, 0.0)                         # guard tiny negatives
-            sigma = float(np.sqrt(var))                 # uncertainty
+            mu = float(theta.T @ x)
+            sigma = float(np.sqrt(max(x.T @ A_inv @ x, 0.0)))
             scores.append(mu + self.alpha * sigma)
 
         return int(np.argmax(scores))
 
-    def update(self, x: np.ndarray, reward: float) -> None:
+    def update(self, x: np.ndarray, reward: float):
         """
-        Update model with selected context x (D,) and observed reward.
+        Update LinUCB with chosen arm and observed reward.
         """
         x = x.reshape(-1, 1)
-        if self.A is None or self.b is None:
-            raise RuntimeError("Model not initialized properly.")
-
         self.A += x @ x.T
         self.b += reward * x
 
 
-def run_training_loop(
-    model: LinUCB,
-    action_groups: list[pd.DataFrame],
-    rw: Optional[RewardWeights] = None,
-    epochs: int = 100,
-    feature_cols: Optional[list[str]] = None,
-) -> None:
+class Trainer:
     """
-    Bandit training loop (moved from main.py).
-
-    Parameters
-    ----------
-    model : LinUCB
-    action_groups : list[pd.DataFrame]  # from env.get_actions()
-    rw : RewardWeights, optional
-    epochs : int
-    feature_cols : list[str], optional  # defaults to original 5 columns
+    Runs contextual bandit training with round/arm terminology.
     """
-    if rw is None:
-        rw = RewardWeights()
+    def __init__(self, model: LinUCB, env_rounds: List[np.ndarray],
+                 rw: Optional[RewardWeights] = None):
+        self.model = model
+        self.env_rounds = env_rounds
+        self.rw = rw if rw is not None else RewardWeights()
 
-    if feature_cols is None:
-        feature_cols = [
-            "Offered_Total",
-            "Served_Total",
-            "consumption_rate",
-            "Production_Cost_Total",
-            "Discarded_Cost",
-        ]
+    def run_round(self, round_idx: int) -> float:
+        """
+        Simulate a single decision round.
+        """
+        X = self.env_rounds[round_idx]
+        chosen_arm = self.model.select(X)
+        reward = compute_reward(X[chosen_arm], self.rw)
+        self.model.update(X[chosen_arm], reward)
+        print(f"  Chosen arm: {chosen_arm}, reward={reward:.4f}")
+        return reward
 
-    for ep in range(epochs):
-        epoch_reward = 0.0
-        for actions in action_groups:
-            if actions.empty:
-                continue
-
-            # same behavior as your original loop
-            X = actions[feature_cols].to_numpy()
-            a = model.select(X)
-            reward = compute_reward(actions.iloc[a], rw)
-            model.update(X[a], reward)
-            epoch_reward += float(reward)
-
-        print(f"Epoch {ep+1}: reward={epoch_reward:.3f}")
+    def train(self):
+        """
+        Run training over all rounds.
+        """
+        print("Starting bandit training...\n")
+        total_reward = 0.0
+        for r in range(len(self.env_rounds)):
+            rwd = self.run_round(r)
+            total_reward += rwd
+            print(f"Round {r+1}/{len(self.env_rounds)} → Reward: {rwd:.4f}")
+        print(f"\nTraining complete. Total reward: {total_reward:.4f}")
