@@ -1,23 +1,57 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Tuple
 
-def load_environment_data(file_path: str):
+# -----------------------------------------------------------
+# LOAD ENVIRONMENT DATA
+# -----------------------------------------------------------
+def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]:
+    """Load CSV data, extract numeric/date features, one-hot encode categories, 
+    and create contextual rounds for bandit simulation."""
     df = pd.read_csv(file_path, low_memory=False)
-    
-    # Features: [Offered_Total, Served_Total, consumption_rate, Discarded_Cost]
-    df['consumption_rate'] = df['Served_Total'] / df['Offered_Total']
-    df['consumption_rate'] = df['consumption_rate'].fillna(0)
+
+    # --- Compute consumption rate safely ---
+    df["consumption_rate"] = df["Served_Total"] / df["Offered_Total"].replace(0, np.nan)
+    df["consumption_rate"] = df["consumption_rate"].fillna(0)
     df.replace([np.inf, -np.inf], 0, inplace=True)
 
-    rounds = []
-    for _, group in df.groupby(['Date', 'School_Name']):
-        features = group[['Offered_Total', 'Served_Total', 'consumption_rate', 'Discarded_Cost']].values
-        rounds.append(features)
-        
-    return rounds
+    # --- Parse date and extract DayOfMonth + Month ---
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df["DayOfMonth"] = df["Date"].dt.day.fillna(0).astype(int)
+    df["Month"] = df["Date"].dt.month.fillna(0).astype(int)
 
+    # --- One-hot encode Meal_Type and School_Name (categorical contexts) ---
+    for col in ["Meal_Type", "School_Name"]:
+        if col not in df.columns:
+            df[col] = "Unknown"
+    df = pd.get_dummies(df, columns=["Meal_Type", "School_Name"], prefix=["meal", "school"])
+
+    # --- Select features (core + one-hot) ---
+    feature_cols = [
+        "Offered_Total", "Served_Total", "consumption_rate",
+        "Discarded_Cost", "DayOfMonth", "Month"
+    ] + [c for c in df.columns if c.startswith(("meal_", "school_"))]
+
+    # --- Group data by Date (each date = one decision round) ---
+    rounds, metadata = [], []
+    for date, group in df.groupby("Date", dropna=False):
+        X = group[feature_cols].to_numpy(dtype=float)
+        rounds.append(X)
+        metadata.append({
+            "date": date,
+            "num_arms": len(group),
+            "schools": [col for col in group.columns if col.startswith("school_") and group[col].any()],
+            "meals": [col for col in group.columns if col.startswith("meal_") and group[col].any()]
+        })
+
+    return rounds, metadata
+
+
+# -----------------------------------------------------------
+# REWARD FUNCTION AND WEIGHTS
+# -----------------------------------------------------------
 @dataclass
 class RewardWeights:
     w_production: float = 0.0
@@ -26,49 +60,39 @@ class RewardWeights:
 
 
 def compute_reward(x: np.ndarray, rw: RewardWeights) -> float:
+    """Compute reward for a selected arm vector.
+    Columns: [Offered_Total, Served_Total, consumption_rate, Discarded_Cost, ...]
     """
-    Compute reward for a selected arm vector.
-    Columns: [Offered_Total, Served_Total, consumption_rate, Discarded_Cost]
-    """
+    #production_cost = x[3] if len(x) > 3 else 0.0
+    discarded_cost = x[4] if len(x) > 4 else 0.0
+    consumption_rate = x[2] if len(x) > 2 else 0.0
 
-    discarded_cost = x[3]
-    consumption_rate = x[2]
-    offered_total = x[0]
-
-    discarded_rate = discarded_cost / (offered_total + 1e-8)
-    reward = - rw.w_discarded * discarded_rate + rw.w_consumption * consumption_rate
+    reward = (
+        -rw.w_discarded * discarded_cost
+        +rw.w_consumption * consumption_rate
+    )
     return float(reward)
 
 
-def describe_environment(rounds: List[np.ndarray], show_rounds: int = 3):
-    """
-    Show action space (arms and features) for each context.
-    """
-    feature_names = [
-        "Offered_Total",
-        "Served_Total",
-        "consumption_rate",
-        "Discarded_Cost",
-    ]
-
-    print(f"\n=== ENVIRONMENT SUMMARY ===")
+# -----------------------------------------------------------
+# DESCRIBE ENVIRONMENT
+# -----------------------------------------------------------
+def describe_environment(rounds: List[np.ndarray], metadata: List[dict], show_rounds: int = 3):
+    """Print an overview of the contextual bandit environment."""
+    print("\n=== ENVIRONMENT SUMMARY ===")
     print(f"Total rounds (contexts): {len(rounds)}")
+
     if not rounds:
-        print("No rounds to describe.")
+        print("No data found.")
         return
-    print(f"Each round has between {min(len(r) for r in rounds)} and {max(len(r) for r in rounds)} arms (actions) × {rounds[0].shape[1]} features\n")
 
-    for i, X in enumerate(rounds[:show_rounds], start=1):
-        print(f"--- Round {i} / Context {i} ---")
-        df = pd.DataFrame(X, columns=feature_names)
-        df.index.name = "Arm_ID"
-        print(df.to_string(index=True))
-        print("\nAction space shape:", X.shape)
-        print("Each arm (row) = one action, with features:", feature_names)
-        print("-" * 70)
-
-if __name__ == "__main__":
-    # Load real data
-    file_path = "/Users/neerajmagadum/Documents/Capstone Project/fall-2025-group1/data/Production Data.csv"
-    env = load_environment_data(file_path)
-    describe_environment(env)
+    for i, (X, meta) in enumerate(zip(rounds[:show_rounds], metadata[:show_rounds]), start=1):
+        date_str = meta["date"].strftime("%Y-%m-%d") if pd.notna(meta["date"]) else "Unknown"
+        print(f"\n--- Round {i} | Date: {date_str} ---")
+        print(f"Number of arms (food items): {meta['num_arms']}")
+        print(f"Schools in this round: {meta['schools']}")
+        print(f"Meal types: {meta['meals']}")
+        print("Feature matrix shape:", X.shape)
+        df_preview = pd.DataFrame(X)
+        print(df_preview.head())
+        print("-" * 80)
