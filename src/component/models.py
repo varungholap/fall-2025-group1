@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Optional
-from env import compute_reward, RewardWeights
+from component.env import compute_reward, RewardWeights
 
 
 class LinUCB:
