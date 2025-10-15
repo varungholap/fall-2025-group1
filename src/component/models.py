@@ -6,25 +6,37 @@ from typing import Tuple
 # LINUCB MODEL
 # ============================================================
 class LinUCB:
-    def __init__(self, n_features: int = None, alpha: float = 1.0):
+    def __init__(self, n_features: int, alpha: float = 1.0, w_discarded: float = 1.0, w_consumption: float = 1.0):
         self.alpha = alpha
-        self.A = None
-        self.b = None
-        self.theta = None
         self.n_features = n_features
+        self.A = np.identity(n_features)
+        self.b = np.zeros((n_features, 1))
+        self.theta = np.zeros((n_features, 1))
+        self.w_discarded = w_discarded
+        self.w_consumption = w_consumption
 
-    def init_params(self, d: int):
-        """Initialize matrices based on feature dimension d."""
-        self.A = np.identity(d)
-        self.b = np.zeros((d, 1))
-        self.theta = np.zeros((d, 1))
-        self.n_features = d
+    def reset(self):
+        """Resets the model's learned parameters to their initial state."""
+        self.A = np.identity(self.n_features)
+        self.b = np.zeros((self.n_features, 1))
+        self.theta = np.zeros((self.n_features, 1))
+
+    def compute_reward(self, x: np.ndarray) -> float:
+        """Compute reward for a selected arm vector.
+        Columns: [Offered_Total, Served_Total, consumption_rate, Discarded_Cost, ...]
+        """
+        #production_cost = x[3] if len(x) > 3 else 0.0
+        discarded_cost = x[3] if len(x) > 3 else 0.0
+        consumption_rate = x[2] if len(x) > 2 else 0.0
+
+        reward = - (
+            self.w_discarded * discarded_cost
+            +self.w_consumption * consumption_rate
+        )
+        return float(reward)
 
     def select_arm(self, X: np.ndarray) -> Tuple[int, float, float]:
         """Select arm using LinUCB rule."""
-        if self.A is None:
-            self.init_params(X.shape[1])
-
         A_inv = np.linalg.inv(self.A)
         p_values = []
         uncertainty_terms = []
@@ -61,44 +73,33 @@ class LinUCB:
         self.b += reward * x
         self.theta = np.linalg.solve(self.A, self.b)
 
-
-# ============================================================
-# TRAINER WITH DIAGNOSTICS
-# ============================================================
-class Trainer:
-    def __init__(self, model: LinUCB, env_rounds: list, rw, reward_func):
-        self.model = model
-        self.env_rounds = env_rounds
-        self.rw = rw
-        self.reward_func = reward_func
-        self.history = {
+    def train(self, env_rounds: list, verbose: bool = True):
+        print("\n=== Starting LinUCB Bandit Training with Diagnostics ===")
+        history = {
             "round": [], "chosen_arm": [], "reward": [], "regret": [],
             "cumulative_reward": [], "cumulative_regret": [],
             "uncertainty": [], "delta_theta": [], "explore_ratio": []
         }
-
-    def train(self, verbose: bool = True):
-        print("\n=== Starting LinUCB Bandit Training with Diagnostics ===")
         cumulative_reward = 0.0
         cumulative_regret = 0.0
         exploration_count = 0
 
-        for t, (X, meta) in enumerate(self.env_rounds, start=1):
+        for t, (X, meta) in enumerate(env_rounds, start=1):
             # --- Snapshot theta BEFORE the update ---
-            prev_theta = self.model.theta.copy() if self.model.theta is not None else np.zeros((X.shape[1], 1))
+            prev_theta = self.theta.copy() if self.theta is not None else np.zeros((X.shape[1], 1))
 
             # --- Choose arm using LinUCB ---
-            chosen_arm, _, avg_uncertainty = self.model.select_arm(X)
+            chosen_arm, _, avg_uncertainty = self.select_arm(X)
             x_chosen = X[chosen_arm]
-            reward = self.reward_func(x_chosen, self.rw)
+            reward = self.compute_reward(x_chosen)
 
             # --- Update model and measure per-update change in theta ---
-            self.model.update(x_chosen, reward)
-            delta_theta = np.linalg.norm(self.model.theta - prev_theta)
+            self.update(x_chosen, reward)
+            delta_theta = np.linalg.norm(self.theta - prev_theta)
 
             # --- Compute regret (optimal reward - chosen reward) ---
             available_arms_mask = np.any(X, axis=1)
-            rewards_all = [self.reward_func(X[i], self.rw) for i, available in enumerate(available_arms_mask) if available]
+            rewards_all = [self.compute_reward(X[i]) for i, available in enumerate(available_arms_mask) if available]
             if not rewards_all:
                 optimal_reward = reward
             else:
@@ -115,15 +116,15 @@ class Trainer:
             explore_ratio = exploration_count / t
 
             # --- Log metrics ---
-            self.history["round"].append(t)
-            self.history["chosen_arm"].append(chosen_arm)
-            self.history["reward"].append(reward)
-            self.history["regret"].append(regret)
-            self.history["cumulative_reward"].append(cumulative_reward)
-            self.history["cumulative_regret"].append(cumulative_regret)
-            self.history["uncertainty"].append(avg_uncertainty)
-            self.history["delta_theta"].append(delta_theta)
-            self.history["explore_ratio"].append(explore_ratio)
+            history["round"].append(t)
+            history["chosen_arm"].append(chosen_arm)
+            history["reward"].append(reward)
+            history["regret"].append(regret)
+            history["cumulative_reward"].append(cumulative_reward)
+            history["cumulative_regret"].append(cumulative_regret)
+            history["uncertainty"].append(avg_uncertainty)
+            history["delta_theta"].append(delta_theta)
+            history["explore_ratio"].append(explore_ratio)
 
             if verbose:
                 date = meta.get("date", "Unknown")
@@ -135,6 +136,6 @@ class Trainer:
         print("\nTraining complete.")
         print(f"Total cumulative reward: {cumulative_reward:.4f}")
         print(f"Total cumulative regret: {cumulative_regret:.4f}")
-        print(f"Exploration ratio: {self.history['explore_ratio'][-1]:.2%}")
+        print(f"Exploration ratio: {history['explore_ratio'][-1]:.2%}")
 
-        return self.history
+        return history
