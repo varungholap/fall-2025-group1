@@ -15,9 +15,7 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
     """Load CSV and create contextual rounds with a fixed number of arms = unique dishes."""
     df = pd.read_csv(file_path, low_memory=False)
 
-    # --- Compute derived columns ---
-    df["consumption_rate"] = df["Served_Total"] / df["Offered_Total"].replace(0, np.nan)
-    df["consumption_rate"] = df["consumption_rate"].fillna(0)
+
     df.replace([np.inf, -np.inf], 0, inplace=True)
 
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
@@ -38,13 +36,12 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
 
     # --- Select core features ---
     feature_cols = [
-        "Offered_Total", "Served_Total", "consumption_rate",
-        "Discarded_Cost", "DayOfMonth", "Month"
+        "Offered_Total", "Served_Total",
+        "Discarded_Cost", "Left_Over_Cost", "DayOfMonth", "Month"
     ] + [c for c in df.columns if c.startswith(("meal_", "school_"))]
 
     # --- Build a complete per-day matrix with all dishes ---
     rounds, metadata = [], []
-    print(df.columns.tolist())
     for (date, school_name), group in df.groupby(["Date", "School_Name"], dropna=False):
         # map each dish to its row if present
         day_features = []

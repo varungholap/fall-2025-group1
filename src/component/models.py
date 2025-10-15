@@ -6,14 +6,12 @@ from typing import Tuple
 # LINUCB MODEL
 # ============================================================
 class LinUCB:
-    def __init__(self, n_features: int, alpha: float = 1.0, w_discarded: float = 1.0, w_consumption: float = 1.0):
+    def __init__(self, n_features: int, alpha: float = 1.0):
         self.alpha = alpha
         self.n_features = n_features
         self.A = np.identity(n_features)
         self.b = np.zeros((n_features, 1))
         self.theta = np.zeros((n_features, 1))
-        self.w_discarded = w_discarded
-        self.w_consumption = w_consumption
 
     def reset(self):
         """Resets the model's learned parameters to their initial state."""
@@ -22,17 +20,10 @@ class LinUCB:
         self.theta = np.zeros((self.n_features, 1))
 
     def compute_reward(self, x: np.ndarray) -> float:
-        """Compute reward for a selected arm vector.
-        Columns: [Offered_Total, Served_Total, consumption_rate, Discarded_Cost, ...]
-        """
-        #production_cost = x[3] if len(x) > 3 else 0.0
-        discarded_cost = x[3] if len(x) > 3 else 0.0
-        consumption_rate = x[2] if len(x) > 2 else 0.0
-
-        reward = - (
-            self.w_discarded * discarded_cost
-            +self.w_consumption * consumption_rate
-        )
+        """Compute reward for a selected arm vector."""
+        discarded_cost = x[2] if len(x) > 2 else 0.0
+        left_over_cost = x[3] if len(x) > 3 else 0.0
+        reward = - (left_over_cost + discarded_cost)
         return float(reward)
 
     def select_arm(self, X: np.ndarray) -> Tuple[int, float, float]:

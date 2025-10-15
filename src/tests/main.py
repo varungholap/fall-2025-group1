@@ -21,7 +21,7 @@ env_rounds, metadata = load_environment_data(file_path)
 
 #%%
 # Initialize model and reward weights
-model = LinUCB(n_features=env_rounds[0].shape[1], alpha=10, w_discarded=1.0, w_consumption=1.0)
+model = LinUCB(n_features=env_rounds[0].shape[1], alpha=100)
 
 #%%
 # Train 
