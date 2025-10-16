@@ -37,13 +37,13 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
 
     # --- Select core features ---
     feature_cols = [
-        "Offered_Total", "Served_Total",
+        "Planned_Total", "Served_Total","Production_Cost_Total",
         "Discarded_Cost", "Left_Over_Cost", "DayOfMonth", "Month"
     ] + [c for c in df.columns if c.startswith(("meal_", "school_"))]
 
     # --- Build a complete per-day matrix with all dishes ---
     rounds, metadata = [], []
-    for (date, school_name), group in df.groupby(["Date", "School_Name"], dropna=False):
+    for (date), group in df.groupby(["Date"], dropna=False):
         # map each dish to its row if present
         day_features = []
         for dish in unique_dishes:
@@ -59,7 +59,7 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
         metadata.append({
             "date": date,
             "num_arms": len(unique_dishes),
-            'schools': school_name,
+            #'schools': school_name,
             "meals": [col for col in group.columns if col.startswith("meal_") and group[col].any()],
             "available_dishes": group["Name"].unique().tolist()
         })
