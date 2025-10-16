@@ -17,6 +17,7 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
 
 
     df.replace([np.inf, -np.inf], 0, inplace=True)
+    df["Name"] = df["Name"].str.replace(r"\s*\(.*\)\s*", "", regex=True)
 
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
     df["DayOfMonth"] = df["Date"].dt.day.fillna(0).astype(int)
