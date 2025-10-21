@@ -21,8 +21,8 @@ class LinUCB:
 
     def compute_reward(self, x: np.ndarray) -> float:
         """Compute reward for a selected arm vector."""
-        discarded_cost = x[2] if len(x) > 2 else 0.0
-        left_over_cost = x[3] if len(x) > 3 else 0.0
+        discarded_cost = x[3] if len(x) > 2 else 0.0
+        left_over_cost = x[4] if len(x) > 3 else 0.0
         reward = - (left_over_cost + discarded_cost)
         return float(reward)
 
