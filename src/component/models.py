@@ -134,7 +134,8 @@ class LinUCB:
             if verbose:
                 date = meta.get("date", "Unknown")
                 school = meta.get("schools", "Unknown")
-                print(f"→ Round {t:03d} | Date: {date} | School: {school} | "
+                meal_type = meta.get("meal_type", "Unknown")
+                print(f"→ Round {t:03d} | Date: {date} | School: {school} | Meal: {meal_type} | "
                       f"Arm #{chosen_arm:03d} | Reward={reward:.4f} | Regret={regret:.4f} | "
                       f"Δθ={delta_theta:.4f} | U={avg_uncertainty:.4f}")
 

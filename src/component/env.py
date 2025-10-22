@@ -28,7 +28,8 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
         if col not in df.columns:
             df[col] = "Unknown"
 
-    # --- One-hot encode categorical features ---
+    # --- Preserve Meal_Type for grouping, then one-hot encode ---
+    df['meal_type_group'] = df['Meal_Type']
     df = pd.get_dummies(df, columns=["Meal_Type"], prefix=["meal"])
 
     # --- Identify all unique dishes (constant arms) ---
@@ -39,11 +40,11 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
     feature_cols = [
         "Planned_Total", "Served_Total","Production_Cost_Total",
         "Discarded_Cost", "Left_Over_Cost", "DayOfMonth", "Month"
-    ] + [c for c in df.columns if c.startswith(("meal_", "school_"))]
+    ] + [c for c in df.columns if c.startswith(("meal_", "school_")) and c != 'meal_type_group']
 
     # --- Build a complete per-day matrix with all dishes ---
     rounds, metadata = [], []
-    for (date, school_name), group in df.groupby(["Date", "School_Name"], dropna=False):
+    for (date, school_name, meal_type), group in df.groupby(["Date", "School_Name", "meal_type_group"], dropna=False):
         # map each dish to its row if present
         day_features = []
         for dish in unique_dishes:
@@ -60,7 +61,7 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
             "date": date,
             "num_arms": len(unique_dishes),
             'schools': school_name,
-            "meals": [col for col in group.columns if col.startswith("meal_") and group[col].any()],
+            'meal_type': meal_type,
             "available_dishes": group["Name"].unique().tolist()
         })
 
