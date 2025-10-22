@@ -20,10 +20,24 @@ class LinUCB:
         self.theta = np.zeros((self.n_features, 1))
 
     def compute_reward(self, x: np.ndarray) -> float:
-        """Compute reward for a selected arm vector."""
-        discarded_cost = x[3] if len(x) > 2 else 0.0
-        left_over_cost = x[4] if len(x) > 3 else 0.0
-        reward = - (left_over_cost + discarded_cost)
+        """
+        Computes the reward based on the 'sell-through rate', a proxy for minimizing waste.
+        The reward is the ratio of items served to items planned.
+        A higher reward (closer to 1.0) signifies lower waste.
+        """
+        # Index 0 is 'Planned_Total', Index 1 is 'Served_Total'
+        planned_total = x[0] if len(x) > 0 else 0.0
+        served_total = x[1] if len(x) > 1 else 0.0
+
+        if planned_total == 0:
+            return 0.0
+
+        # In some cases, more items might be served than planned.
+        # We cap the reward at 1.0, as serving 100% of what was planned is the ideal state.
+        if served_total > planned_total:
+            return 1.0
+        
+        reward = served_total / planned_total
         return float(reward)
 
     def select_arm(self, X: np.ndarray) -> Tuple[int, float, float]:
