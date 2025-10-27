@@ -1,39 +1,24 @@
 import numpy as np
-from typing import  Optional
 from typing import Tuple
 
-# ============================================================
-# LINUCB MODEL
-# ============================================================
 class LinUCB:
-    def __init__(self, n_features: int, alpha: float = 1.0):
-        self.alpha = alpha
+    def __init__(self, n_arms: int, n_features: int, alpha: float = 1.0):
+        self.n_arms = n_arms
         self.n_features = n_features
-        self.A = np.identity(n_features)
-        self.b = np.zeros((n_features, 1))
-        self.theta = np.zeros((n_features, 1))
+        self.alpha = alpha
+        self.A = [np.identity(n_features) for _ in range(n_arms)]
+        self.b = [np.zeros((n_features, 1)) for _ in range(n_arms)]
 
     def reset(self):
-        """Resets the model's learned parameters to their initial state."""
-        self.A = np.identity(self.n_features)
-        self.b = np.zeros((self.n_features, 1))
-        self.theta = np.zeros((self.n_features, 1))
+        self.A = [np.identity(self.n_features) for _ in range(self.n_arms)]
+        self.b = [np.zeros((self.n_features, 1)) for _ in range(self.n_arms)]
 
     def compute_reward(self, x: np.ndarray) -> float:
-        """
-        Computes the reward based on the 'sell-through rate', a proxy for minimizing waste.
-        The reward is the ratio of items served to items planned.
-        A higher reward (closer to 1.0) signifies lower waste.
-        """
-        # Index 0 is 'Planned_Total', Index 1 is 'Served_Total'
         planned_total = x[0] if len(x) > 0 else 0.0
         served_total = x[1] if len(x) > 1 else 0.0
 
         if planned_total == 0:
             return 0.0
-
-        # In some cases, more items might be served than planned.
-        # We cap the reward at 1.0, as serving 100% of what was planned is the ideal state.
         if served_total > planned_total:
             return 1.0
         
@@ -41,66 +26,60 @@ class LinUCB:
         return float(reward)
 
     def select_arm(self, X: np.ndarray) -> Tuple[int, float, float]:
-        """Select arm using LinUCB rule."""
-        A_inv = np.linalg.inv(self.A)
+        """Select arm using the LinUCB rule for disjoint models."""
         p_values = []
         uncertainty_terms = []
 
-        # Identify available arms (those with non-zero feature vectors)
         available_arms_mask = np.any(X, axis=1)
-
-        for i in range(X.shape[0]):
-            if not available_arms_mask[i]:
-                p_values.append(-np.inf)  # Assign a very low value to unavailable arms
+        # just do a dot product with available_arms_mask with X
+        for i in range(self.n_arms):
+            if i >= X.shape[0] or not available_arms_mask[i]:
+                p_values.append(-np.inf) 
                 uncertainty_terms.append(0.0)
                 continue
 
+            A_inv = np.linalg.inv(self.A[i])
+            theta_i = np.linalg.solve(self.A[i], self.b[i])
             x = X[i].reshape(-1, 1)
-            mean = float(np.dot(self.theta.T, x))
+            mean = float(np.dot(theta_i.T, x))
             conf = self.alpha * np.sqrt(np.dot(np.dot(x.T, A_inv), x))
             p = mean + conf
+            
             p_values.append(float(p))
             uncertainty_terms.append(float(conf))
 
-        # Choose arm with highest UCB
         chosen_arm = int(np.argmax(p_values))
         
         p_value_of_chosen = p_values[chosen_arm]
         if np.isneginf(p_value_of_chosen):
-            p_value_of_chosen = 0.0 # Handle case where no arms were available
-
+            p_value_of_chosen = 0.0 
         return chosen_arm, float(p_value_of_chosen), float(np.mean(uncertainty_terms))
 
-    def update(self, x: np.ndarray, reward: float):
-        """Update model with chosen arm and observed reward."""
+    def update(self, arm_index: int, x: np.ndarray, reward: float):
         x = x.reshape(-1, 1)
-        self.A += np.dot(x, x.T)
-        self.b += reward * x
-        self.theta = np.linalg.solve(self.A, self.b)
+        self.A[arm_index] += np.dot(x, x.T)
+        self.b[arm_index] += reward * x
 
     def train(self, env_rounds: list, verbose: bool = True):
         print("\n=== Starting LinUCB Bandit Training with Diagnostics ===")
         history = {
             "round": [], "chosen_arm": [], "reward": [], "regret": [],
             "cumulative_reward": [], "cumulative_regret": [],
-            "uncertainty": [], "delta_theta": [], "explore_ratio": []
+            "uncertainty": [], "explore_ratio": []
         }
         cumulative_reward = 0.0
         cumulative_regret = 0.0
         exploration_count = 0
 
         for t, (X, meta) in enumerate(env_rounds, start=1):
-            # --- Snapshot theta BEFORE the update ---
-            prev_theta = self.theta.copy() if self.theta is not None else np.zeros((X.shape[1], 1))
-
             # --- Choose arm using LinUCB ---
             chosen_arm, _, avg_uncertainty = self.select_arm(X)
+
             x_chosen = X[chosen_arm]
             reward = self.compute_reward(x_chosen)
 
-            # --- Update model and measure per-update change in theta ---
-            self.update(x_chosen, reward)
-            delta_theta = np.linalg.norm(self.theta - prev_theta)
+            # --- Update model ---
+            self.update(chosen_arm, x_chosen, reward)
 
             # --- Compute regret (optimal reward - chosen reward) ---
             available_arms_mask = np.any(X, axis=1)
@@ -128,7 +107,6 @@ class LinUCB:
             history["cumulative_reward"].append(cumulative_reward)
             history["cumulative_regret"].append(cumulative_regret)
             history["uncertainty"].append(avg_uncertainty)
-            history["delta_theta"].append(delta_theta)
             history["explore_ratio"].append(explore_ratio)
 
             if verbose:
@@ -137,7 +115,7 @@ class LinUCB:
                 meal_type = meta.get("meal_type", "Unknown")
                 print(f"→ Round {t:03d} | Date: {date} | School: {school} | Meal: {meal_type} | "
                       f"Arm #{chosen_arm:03d} | Reward={reward:.4f} | Regret={regret:.4f} | "
-                      f"Δθ={delta_theta:.4f} | U={avg_uncertainty:.4f}")
+                      f"U={avg_uncertainty:.4f}")
 
         print("\nTraining complete.")
         print(f"Total cumulative reward: {cumulative_reward:.4f}")

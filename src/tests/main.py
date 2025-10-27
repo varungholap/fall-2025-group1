@@ -21,10 +21,12 @@ env_rounds, metadata = load_environment_data(file_path)
 
 #%%
 # Initialize model and reward weights
-model = LinUCB(n_features=env_rounds[0].shape[1], alpha=0.5)
+model = LinUCB(n_arms=env_rounds[0].shape[0], n_features=env_rounds[0].shape[1], alpha=0.5)
 
 #%%
 # Train 
 model.train(env_rounds=list(zip(env_rounds, metadata)))
 
 # %%
+
+# model.recommend()
