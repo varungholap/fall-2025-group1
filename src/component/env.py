@@ -10,8 +10,7 @@ from typing import List, Tuple
 # LOAD ENVIRONMENT DATA
 # -----------------------------------------------------------
 
-#%%
-def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]:
+def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict], List[str]]:
     """Load CSV and create contextual rounds with a fixed number of arms = unique dishes."""
     df = pd.read_csv(file_path, low_memory=False)
 
@@ -65,7 +64,7 @@ def load_environment_data(file_path: str) -> Tuple[List[np.ndarray], List[dict]]
             "available_dishes": group["Name"].unique().tolist()
         })
 
-    return rounds, metadata
+    return rounds, metadata, unique_dishes
 
 
 

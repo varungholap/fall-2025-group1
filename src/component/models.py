@@ -123,3 +123,68 @@ class LinUCB:
         print(f"Exploration ratio: {history['explore_ratio'][-1]:.2%}")
 
         return history
+    def recommend(self, X: np.ndarray, top_k: int = 3) -> list[int]:
+        """
+        Recommend the top_k arms for a given context X based on predicted mean reward.
+        
+        Args:
+            X (np.ndarray): The feature matrix for all arms in the current context.
+            top_k (int): The number of top arms to recommend.
+
+        Returns:
+            list[int]: A list of indices for the top_k recommended arms.
+        """
+        p_values = []
+        available_arms_mask = np.any(X, axis=1)
+
+        for i in range(self.n_arms):
+            if i >= X.shape[0] or not available_arms_mask[i]:
+                p_values.append(-np.inf)
+                continue
+
+            theta_i = np.linalg.solve(self.A[i], self.b[i])
+            x = X[i].reshape(-1, 1)
+            p = float(np.dot(theta_i.T, x)) # Use predicted mean for recommendation
+            p_values.append(p)
+
+        return np.argsort(p_values)[-top_k:][::-1].tolist()
+
+    def generate_and_display_all_recommendations(
+        self,
+        env_rounds: list[np.ndarray],
+        metadata: list[dict],
+        unique_dishes: list[str],
+        top_k: int = 3
+    ):
+        """
+        Generates and displays top_k dish recommendations for all contexts
+        (schools, meal types, dates) based on the trained model.
+
+        Args:
+            env_rounds (list[np.ndarray]): List of feature matrices for each context.
+            metadata (list[dict]): List of metadata dictionaries for each context.
+            unique_dishes (list[str]): Sorted list of all unique dish names,
+                                       used to map arm indices to dish names.
+            top_k (int): The number of top dishes to recommend for each context.
+        """
+        print("\n\n=== Generating Recommendations ===")
+
+        for i, (X, meta) in enumerate(zip(env_rounds, metadata)):
+            top_k_arm_indices = self.recommend(X, top_k=top_k)
+            
+            # Handle cases where no valid recommendations can be made
+            if not top_k_arm_indices:
+                continue
+
+            recommended_dishes = [unique_dishes[arm_idx] for arm_idx in top_k_arm_indices]
+
+            school = meta.get("schools", "Unknown")
+            meal_type = meta.get("meal_type", "Unknown")
+            date = meta.get("date", "Unknown Date")
+
+            # Safely format date
+            date_str = date.strftime('%Y-%m-%d') if hasattr(date, 'strftime') else str(date)
+
+            print(f"\n→ Recommendations for {school} ({meal_type}) on {date_str}:")
+            for j, dish in enumerate(recommended_dishes, 1):
+                print(f"  {j}. {dish}")

@@ -2,6 +2,7 @@
 import os
 import sys
 import numpy as np
+import pandas as pd
 
 current_dir = os.path.dirname(__file__)
 src_path = os.path.abspath(os.path.join(current_dir, '..'))
@@ -13,7 +14,7 @@ from component.models import LinUCB
 #%%
 # Load environment
 file_path = os.path.abspath(os.path.join(src_path, '../data/Production Data.csv'))
-env_rounds, metadata = load_environment_data(file_path)
+env_rounds, metadata, unique_dishes = load_environment_data(file_path)
 
 #%%
 # Display a preview of rounds
@@ -27,6 +28,9 @@ model = LinUCB(n_arms=env_rounds[0].shape[0], n_features=env_rounds[0].shape[1],
 # Train 
 model.train(env_rounds=list(zip(env_rounds, metadata)))
 
-# %%
+#%%
+# Define the output path for the recommendations CSV
+output_file_path = os.path.abspath(os.path.join(src_path, '../reports/recommendations.csv'))
 
-# model.recommend()
+# Generate and display recommendations using the model's new method
+model.generate_and_display_all_recommendations(env_rounds, metadata, unique_dishes, top_k=3, output_path=output_file_path)
