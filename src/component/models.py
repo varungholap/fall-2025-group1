@@ -149,16 +149,41 @@ class LinUCB:
 
         return np.argsort(p_values)[-top_k:][::-1].tolist()
 
+    def get_p_values(self, X: np.ndarray, arm_indices: list[int]) -> list[float]:
+        """
+        Calculate the predicted mean reward for a specific list of arm indices.
+
+        Args:
+            X (np.ndarray): The feature matrix for all arms in the current context.
+            arm_indices (list[int]): The list of arm indices to get p-values for.
+
+        Returns:
+            list[float]: A list of predicted mean rewards for the given arm indices.
+        """
+        p_values = []
+        for arm_idx in arm_indices:
+            if arm_idx >= X.shape[0] or not np.any(X[arm_idx]):
+                p_values.append(0.0) # Or handle as an error/default
+                continue
+
+            theta_i = np.linalg.solve(self.A[arm_idx], self.b[arm_idx])
+            x = X[arm_idx].reshape(-1, 1)
+            p = float(np.dot(theta_i.T, x))
+            p_values.append(p)
+        return p_values
+
     def generate_and_display_all_recommendations(
         self,
         env_rounds: list[np.ndarray],
         metadata: list[dict],
         unique_dishes: list[str],
-        top_k: int = 3
+        top_k: int = 3,
+        output_path: str = None
     ):
         """
         Generates and displays top_k dish recommendations for all contexts
-        (schools, meal types, dates) based on the trained model.
+        (schools, meal types, dates) based on the trained model, and optionally
+        saves them to a CSV file.
 
         Args:
             env_rounds (list[np.ndarray]): List of feature matrices for each context.
@@ -166,11 +191,15 @@ class LinUCB:
             unique_dishes (list[str]): Sorted list of all unique dish names,
                                        used to map arm indices to dish names.
             top_k (int): The number of top dishes to recommend for each context.
+            output_path (str, optional): If provided, saves the recommendations
+                                         to this CSV file path. Defaults to None.
         """
         print("\n\n=== Generating Recommendations ===")
+        all_recommendations = []
 
         for i, (X, meta) in enumerate(zip(env_rounds, metadata)):
             top_k_arm_indices = self.recommend(X, top_k=top_k)
+            p_values = self.get_p_values(X, top_k_arm_indices)
             
             # Handle cases where no valid recommendations can be made
             if not top_k_arm_indices:
@@ -188,3 +217,20 @@ class LinUCB:
             print(f"\n→ Recommendations for {school} ({meal_type}) on {date_str}:")
             for j, dish in enumerate(recommended_dishes, 1):
                 print(f"  {j}. {dish}")
+            
+            # Prepare data for CSV
+            for rank, (arm_idx, p_val) in enumerate(zip(top_k_arm_indices, p_values), 1):
+                all_recommendations.append({
+                    "Date": date_str,
+                    "School": school,
+                    "Meal_Type": meal_type,
+                    "Rank": rank,
+                    "Recommended_Dish": unique_dishes[arm_idx],
+                    "Predicted_Score": p_val
+                })
+
+        if output_path and all_recommendations:
+            import pandas as pd # Import pandas locally if not already imported globally
+            recommendations_df = pd.DataFrame(all_recommendations)
+            recommendations_df.to_csv(output_path, index=False)
+            print(f"\nRecommendations saved to: {output_path}")

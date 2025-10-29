@@ -26,7 +26,8 @@ model = LinUCB(n_arms=env_rounds[0].shape[0], n_features=env_rounds[0].shape[1],
 
 #%%
 # Train 
-model.train(env_rounds=list(zip(env_rounds, metadata)))
+training_data = list(zip(env_rounds, metadata))
+model.train(env_rounds=training_data)
 
 #%%
 # Define the output path for the recommendations CSV
