@@ -214,9 +214,9 @@ class LinUCB:
             # Safely format date
             date_str = date.strftime('%Y-%m-%d') if hasattr(date, 'strftime') else str(date)
 
-            print(f"\n→ Recommendations for {school} ({meal_type}) on {date_str}:")
-            for j, dish in enumerate(recommended_dishes, 1):
-                print(f"  {j}. {dish}")
+            #print(f"\n→ Recommendations for {school} ({meal_type}) on {date_str}:")
+            #for j, dish in enumerate(recommended_dishes, 1):
+            #    print(f"  {j}. {dish}")
             
             # Prepare data for CSV
             for rank, (arm_idx, p_val) in enumerate(zip(top_k_arm_indices, p_values), 1):
@@ -234,3 +234,34 @@ class LinUCB:
             recommendations_df = pd.DataFrame(all_recommendations)
             recommendations_df.to_csv(output_path, index=False)
             print(f"\nRecommendations saved to: {output_path}")
+class RandomPolicy:
+    def __init__(self, n_arms: int):
+        self.n_arms = n_arms
+
+    def compute_reward(self, x: np.ndarray) -> float:
+        planned_total = x[0] if len(x) > 0 else 0.0
+        served_total = x[1] if len(x) > 1 else 0.0
+        if planned_total == 0:
+            return 0.0
+        return float(served_total / planned_total)
+
+    def select_arm(self, X: np.ndarray) -> int:
+        available_mask = np.any(X, axis=1)
+        available_arm_indices = np.where(available_mask)[0]
+        if len(available_arm_indices) == 0:
+            return np.random.randint(self.n_arms)
+        return int(np.random.choice(available_arm_indices))
+
+    def train(self, env_rounds: list):
+        print("\n=== Running Random Policy Baseline ===")
+        cumulative_reward = 0.0
+
+        for t, (X, meta) in enumerate(env_rounds, start=1):
+            chosen_arm = self.select_arm(X)
+            reward = self.compute_reward(X[chosen_arm])
+            cumulative_reward += reward
+
+            #print(f"Rnd {t:03d} | Arm #{chosen_arm:03d} | R={reward:.4f}")
+
+        print(f"→ Total cumulative reward (Random): {cumulative_reward:.4f}")
+        return cumulative_reward

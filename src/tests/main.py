@@ -9,7 +9,7 @@ src_path = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.append(src_path)
 
 from component.env import load_environment_data
-from component.models import LinUCB
+from component.models import LinUCB, RandomPolicy
 
 #%%
 # Load environment
@@ -28,7 +28,8 @@ model = LinUCB(n_arms=env_rounds[0].shape[0], n_features=env_rounds[0].shape[1],
 # Train 
 training_data = list(zip(env_rounds, metadata))
 model.train(env_rounds=training_data)
-
+random_model = RandomPolicy(n_arms=env_rounds[0].shape[0])
+random_model.train(training_data)
 #%%
 # Define the output path for the recommendations CSV
 output_file_path = os.path.abspath(os.path.join(src_path, '../reports/recommendations.csv'))
