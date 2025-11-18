@@ -261,7 +261,8 @@ class RandomPolicy:
             reward = self.compute_reward(X[chosen_arm])
             cumulative_reward += reward
 
-            #print(f"Rnd {t:03d} | Arm #{chosen_arm:03d} | R={reward:.4f}")
+            #
+            # print(f"Rnd {t:03d} | Arm #{chosen_arm:03d} | R={reward:.4f}")
 
         print(f"→ Total cumulative reward (Random): {cumulative_reward:.4f}")
         return cumulative_reward
