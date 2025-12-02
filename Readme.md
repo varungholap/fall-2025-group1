@@ -1,134 +1,399 @@
+Health-Aware School Meal Recommendations with Contextual Bandits
+Capstone Project – The George Washington University
 
-# Capstone Proposal
-## Health-Aware School Meal Recommendations with Contextual Bandits
-### Proposed by: Tyler Wallett
-#### Email: twallett@gwu.edu
-#### Advisor: Amir Jafari
-#### The George Washington University, Washington DC  
-#### Data Science Program
+Authors: Neeraj Shashikant Magadum, Varun Gholap
+Advisor: Prof. Amir Jafari
+Program: M.S. in Data Science
+Semester: Fall 2025
+
+Overview
+
+This project introduces an adaptive recommendation system for K–12 school meal planning using Contextual Multi-Armed Bandits (CMAB). The system helps school nutrition staff optimize three competing objectives:
+
+Improve student health by recommending nutritious meals
+
+Increase participation through appealing food choices
+
+Reduce food waste by aligning production with estimated demand
+
+Using historical production data from Fairfax County Public Schools (FCPS), our system learns student preferences in context (school, date, meal type) and recommends meals that balance popularity and nutritional value. The underlying algorithm, LinUCB, adaptively updates its recommendations using reinforcement learning principles.
+
+This project is being developed as an open-source tool to empower non-technical school nutritionists and researchers to make data-informed decisions.
+
+Table of Contents
+
+Objective
+
+Dataset
+
+Rationale
+
+System Architecture & Methodology
+
+Contextual Bandit Formulation
+
+LinUCB Learning Algorithm
+
+Evaluation Protocol
+
+Results
+
+Discussion
+
+Conclusion
+
+How to Run
+
+Project Timeline
+
+Contact
+
+Objective
+
+The goal of this project is to create a free and open-source CMAB-based recommendation tool that can be used by:
+
+School nutritionists
+
+Cafeteria managers
+
+District administrators
+
+Researchers
+
+The system recommends meals that optimize student health, participation, and waste reduction by:
+
+Learning student preferences across contexts
+
+Balancing exploration vs. exploitation
+
+Encouraging nutrient-dense meal options
+
+Forecasting demand more accurately
+
+The broader aim is to build an accessible research tool capable of supporting data-driven school nutrition planning.
+
+Dataset
+
+We use production and sales data provided by Fairfax County Public Schools (FCPS).
+
+Each row includes:
+
+School
+
+Date
+
+Meal type
+
+Dish name
+
+Planned servings
+
+Actual servings
+
+Production cost
+
+Waste (discarded + leftover cost)
+
+Over the full dataset:
+
+7,940 contextual rounds
+
+321 unique dishes (arms)
+
+Data spans multiple schools and meal services
+
+Rationale
+
+School nutrition teams face a difficult challenge:
+
+Healthy meals may be unpopular
+
+Popular meals may not meet nutrition goals
+
+Overproduction leads to food waste and financial loss
+
+Staff usually lack advanced analytics tools
+
+A contextual bandit approach allows dynamic, real-time decision-making:
+
+Learns which meals perform well in each school context
+
+Encourages exploration of healthier alternatives
+
+Predicts demand to minimize waste
+
+Provides interpretable recommendations for non-technical users
+
+This project bridges public health nutrition and reinforcement learning, producing a practical tool for school operations.
+
+System Architecture & Methodology
+
+The pipeline consists of several modules:
+
+1. Environment (utils/env.py)
+
+Construct contextual rounds from FCPS data.
+
+load_data() – load cleaned CSV
+
+get_states() – feature matrices for each round
+
+get_actions() – available meals at each time step
+
+get_health_scores() – nutrition-based scoring per meal
+
+2. Bandit Model (model.py)
+
+Implements the full LinUCB algorithm.
+
+action() – choose optimal arm
+
+train() – iteratively update parameters
+
+calculate_reward() – served-to-planned ratio (+ health factor)
+
+update() – ridge regression update
+
+reset() – clear parameters
+
+save() – persist model
+
+recommend() – generate recommendations
+
+3. Driver Script (main.py)
+
+Coordinates environment + model for full training loop.
+
+4. Evaluation Tools (utils/metrics.py / utils/plot.py)
+
+Cumulative reward
+
+Cumulative regret
+
+Moving averages
+
+Exploration metrics
+
+Arm-selection frequencies
+
+Rank distribution plots
+
+5. Benchmarking (benchmark.py)
+
+Runs 10+ trials
+
+Compares multiple α (exploration) values
+
+Sweeps λ (health weighting) values
+
+Saves results to CSV
+
+Contextual Bandit Formulation
+
+At each round t, the model receives:
+
+Context
+
+Feature vector combining:
+
+One-hot encoded school
+
+Meal type
+
+Day of week, month
+
+Planned & served quantities
+
+Production and waste costs
+
+Arms
+
+All 321 unique menu items, masked by daily availability.
+
+Reward
+
+The default reward:
+
+if Planned_Total == 0:
+    reward = 0
+else:
+    reward = Served_Total / Planned_Total
 
 
-## 1 Objective:  
- 
-            The goal of this project is to develop a free and open source analysis and recommendation tool that can be used 
-            by non-technical school nutritionists, cafeteria staff, and researchers to optimize school meal offerings for 
-            both student preference and healthiness. The tool will leverage Contextual Multi-Armed Bandit (CMAB) algorithms 
-            to recommend meals that balance popularity and nutrition. Our project is affiliated with Fairfax County Public 
-            Schools (FCPS), which provides the historical meal sales data used in this project. Built by data scientists, the 
-            tool is designed to be used by non-technical stakeholders, empowering them to make data-driven decisions to 
-            improve student nutrition while maintaining participation.
+Extended health-aware reward:
 
-            Develop or refine a methodological approach using CMAB to recommend meals based on contextual features such as 
-            school, time of day, and day of the week, while incorporating a healthiness weighting into the reward function.  
+reward = (1 - λ) * (Served / Planned) + λ * Health_Score
 
-            Integrate this CMAB-based recommendation system into an open source library for school nutrition 
-            research, so that future stakeholders can use your methodology to make healthier, data-informed decisions. 
+LinUCB Learning Algorithm
 
-## How to Run
-For instructions on how to run the project, please see [RUN.md](RUN.md).
-            
+The predicted reward for arm a:
+
+score = θᵀx + α * sqrt(xᵀA⁻¹x)
 
 
-## 2 Dataset:  
+Where:
 
-            FCPS Sales Data: Box Folder Link
-            
+θ – learned parameter weights
 
-## 3 Rationale:  
+A – design matrix (updated per arm)
 
-            School nutrition is a critical factor in student health, academic performance, and long-term well-being. However, 
-            cafeteria participation is often influenced by student preferences for popular but less healthy food options, 
-            making it challenging for nutritionists to balance meal appeal with nutritional goals. Data-driven approaches 
-            can help address this challenge, but many school staff and researchers lack the technical expertise to analyze 
-            meal sales and optimize offerings at scale. 
+α – exploration parameter
 
-            Students can apply their Data Science and Reinforcement Learning skills to develop a methodology using 
-            Contextual Multi-Armed Bandits (CMAB) that recommends meals based on both popularity and healthiness, 
-            tailored to each school and time of day. By integrating this methodology into an open source tool, non-technical 
-            users will be empowered to make evidence-based decisions that improve student nutrition while maintaining 
-            participation rates. In doing so, students contribute to healthier school environments and provide a scalable 
-            framework for future research in data-driven school nutrition planning.
-            
+After observing reward r, LinUCB updates:
 
-## 4 Approach:  
+A_a ← A_a + x xᵀ
+b_a ← b_a + r x
+θ_a = A_a⁻¹ b_a
 
-            [Understanding the Reinforcement Learning (RL) Framework] 
-            Students will learn the RL framework, focusing on Contextual Multi-Armed Bandits (CMAB), including:
+Evaluation Protocol
 
-            - Understanding CMAB assumptions and limitations: stationarity, independence, exploration-exploitation trade-off.
-            - State space design: selecting relevant contextual features (e.g., school, time_of_day, day_of_week).
-            - Action space design: defining meal options as arms in the bandit framework (e.g. item_id).
-            - Reward design: formulating reward signals based on sales data and health penalty factor (reward = total_meals_served + λ * healthiness_score_of_item).
-            - Algorithm selection: evaluating CMAB algorithms (e.g. LinUCB).
+Evaluation uses offline replay, where:
 
-            [`utils/env.py`]
-            Students will implement the CMAB environment to simulate meal recommendation scenarios using the FCPS dataset:
+Model observes historical context
 
-            - load_data() -> func: Load preprocessed FCPS sales CSV.
-            - get_states() -> func: Return matrix (m × n) where m = time steps, n = contextual features.
-            - get_actions() -> func: Return matrix (m × p) where m = time steps, p = meal options.
-            - get_health_scores() -> func: Vector (p × 1) with healthiness score for each meal option.
+Chooses an arm
 
-            [`model.py` & `main.py`]
-            Students will implement the LinUCB algorithm and related methods for training and inference:
+Receives reward from actual historical data
 
-            - LinUCB() & __init__() -> class: Initialize CMAB model.
-            - self.train() -> method/func: Train the model on observed rewards.
-            - self.action() -> method/func: Select a valid meal given the current context, considering only meals available at that time step (mask).
-            - self.calculate_reward() (sometimes called bandit()) -> method/func: Compute reward for the chosen action.
-            - self.update() -> method/func: Update model parameters based on observed reward.
-            - self.reset() -> method/func: Reset the model to initial state.
-            - self.save() -> method/func: Save model parameters.
-            - self.recommend() -> method/func: Provide meal recommendations based on learned policy.
+Computes regret vs. optimal arm that day
 
-            - `main.py` - train and roughly evaluate the CMAB model using the custom environment and FCPS dataset.
+Metrics:
 
-            [`utils/metrics.py` & `utils/plot.py`]
-            Students will learn how to measure performance and visualize results:
+Cumulative reward
 
-            - calulate_regret() -> func: Compute regret for evaluation.
-            - calculate_cumulative_reward() -> func: Compute cumulative reward over time.
+Cumulative regret
 
-            - plot_top_meals() -> func: Visualize top-performing meals.
-            - plot_recommendations() -> func: Plot recommendations over time or by context.
+Exploration ratio
 
-            [`benchmark.py`]
-            Students will learn how to run systematic experiments and analyze results:
+Uncertainty decay
 
-            - Run multiple experiments with different λ values.
-            - Hyperparameter tuning.
-            - bench_results_to_csv() -> func: Save benchmarking results to CSV for analysis.
+Selection frequency
 
-            
+Baseline: Random Policy (uniform random valid arm).
 
-## 5 Timeline:  
+Results
+Summary Table
+Metric	LinUCB	Random Baseline
+Total rounds	7,940	7,940
+Unique dishes	321	321
+Cumulative reward	369.57	90.44
+Cumulative regret	574.18	—
+Exploration ratio	1.69%	—
 
-            [Understanding the Reinforcement Learning (RL) Framework] 1 week
-            [`utils/env.py`] 2 weeks
-            [`main.py` & `model.py`] 5 weeks
-            [`utils/metrics.py` & `utils/plot.py`] 2 weeks (start writting research paper here)
-            [`benchmark.py`] 2 weeks
-            
+Key takeaway:
+LinUCB achieved more than 4× the cumulative reward of the random policy.
 
+Major findings
 
-## 6 Expected Number Students:  
+LinUCB rapidly converges (uncertainty → 0 early)
 
-            Given the scope and complexity of the project, it is recommended to have 2-3 students working collaboratively.
-            
+A small set of high-performing dishes dominate recommendations
 
-## 7 Possible Issues:  
+Chickpeas, Fat-Free Milk, Italian Dressing were consistently top-ranked
 
-            - Implementing Contextual Multi-Armed Bandits (CMAB) can be complex for students.  
-            - Designing the state and action spaces correctly may be challenging.  
-            - Shaping the reward function to balance popularity and healthiness requires careful consideration.  
-            - Handling unavailable meal options at each time step requires proper action masking.  
-            - Debugging interactions between the environment and the bandit model can be difficult.  
-            - Accurately computing cumulative rewards and regret is essential and may be error-prone.  
-            - Data preprocessing and encoding categorical features from the FCPS dataset may present challenges.
-            
+Reward moving average stabilizes over time
 
+School-level patterns indicate real differences in demand
 
-## Contact
-- Author: Amir Jafari
-- Email: [ajafari@gwu.edu](mailto:ajafari@gwu.edu)
-- GitHub: [None](https://github.com/None)
+All plots are implemented in /utils/plot.py:
+
+Cumulative reward & regret
+
+Uncertainty vs. rounds
+
+Rolling average reward
+
+Arm-selection frequencies
+
+Rank distribution for specific dishes
+
+School-wise score distributions
+
+Discussion
+
+Our study demonstrates that a contextual bandit is a powerful tool for school meal optimization, even in a real-world dataset that is:
+
+Sparse
+
+Noisy
+
+Highly variable across time
+
+Strengths
+
+Major reward improvement over baseline
+
+Clear convergence behavior
+
+Interpretable arm preferences
+
+Provides actionable insights to administrators
+
+Challenges
+
+Reward signal influenced by external factors (attendance, weather, events)
+
+Non-stationary student preferences
+
+Many items appear too rarely to learn strong estimates
+
+Current reward does not include cost/variety/nutritional constraints explicitly
+
+Future improvements
+
+Multi-objective reward functions
+
+Thompson Sampling, Neural Bandits
+
+Sliding-window or discounting for non-stationarity
+
+Multi-day planning via full RL environment
+
+Integration with menu management dashboards
+
+Factoring nutrition, budget, and USDA compliance into policy
+
+Conclusion
+
+This project successfully demonstrates that LinUCB contextual bandits significantly outperform uninformed strategies in recommending K–12 school meals.
+
+Key conclusions:
+
+LinUCB achieved 4× higher cumulative reward than random
+
+Learned stable, interpretable recommendations
+
+Provided deep insight into student food preference patterns
+
+Can help reduce waste and improve participation
+
+Can form the foundation of a practical decision-support tool
+
+Bandit-based decision systems hold real promise for school nutrition optimization, and this work provides a strong foundation for continued development.
+
+How to Run
+
+Full instructions are provided in:
+RUN.md
+
+Typical workflow:
+
+python main.py          # Train & evaluate LinUCB
+python benchmark.py     # Run benchmarking trials
+
+Project Timeline
+Component	Duration
+RL Framework	1 week
+Environment (env.py)	2 weeks
+Model (model.py, main.py)	5 weeks
+Metrics & Plots	2 weeks
+Benchmarking	2 weeks
+Research Paper Writing	Parallel to metrics/plots
+Contact
+
+Advisor:
+Prof. Amir Jafari
+Email: ajafari@gwu.edu
+
+Contributor:
+Varun Gholap – varung@gwu.edu
