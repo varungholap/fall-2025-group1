@@ -261,20 +261,39 @@ def generate_all_plots(
                 )
 
         # C4. Predicted Score distribution by School (boxplot for top-10 by count)
+        
         if {"School", "Predicted_Score"}.issubset(rec.columns):
             score_by_school = defaultdict(list)
             for _, row in rec.iterrows():
-                score_by_school[row.get("School", "Unknown")].append(float(row.get("Predicted_Score", 0.0)))
+                score_by_school[row.get("School", "Unknown")].append(
+                    float(row.get("Predicted_Score", 0.0))
+                    )
+                # pick top 10 schools
             sizes = {k: len(v) for k, v in score_by_school.items()}
             top_schools = sorted(sizes, key=sizes.get, reverse=True)[:10]
-            score_by_school_top = {k: score_by_school[k] for k in top_schools}
-            _plot_boxplot(
-                score_by_school_top,
-                xlabel="School (Top 10 by recommendations)",
-                ylabel="Predicted Score",
-                outpath=os.path.join(out_dir, "C4_score_by_school.png"),
-                title="Predicted Score Distribution by School"
-            )
+            # number the schools → 1..10
+            numbered_labels = {i+1: school for i, school in enumerate(top_schools)}
+                # reorder data by these numeric labels
+            score_lists = [score_by_school[school] for school in top_schools]
+            # ---- Plot generation ----
+            import matplotlib.pyplot as plt
+            plt.figure(figsize=(10, 6))
+            plt.boxplot(score_lists, labels=range(1, 11))
+            plt.xlabel("School ID (see legend)")
+            plt.ylabel("Predicted Score")
+            plt.title("Predicted Score Distribution by School")
+            # build legend (mapping numbers → school names)
+            legend_entries = [f"{i}. {school}" for i, school in numbered_labels.items()]
+            plt.legend(
+                legend_entries,
+                title="School Legend",
+                bbox_to_anchor=(1.05, 1),
+                loc="upper left",
+                borderaxespad=0.,
+                )
+            plt.tight_layout()
+            plt.savefig(os.path.join(out_dir, "C4_score_by_school_numbered.png"))
+            plt.close()
 
         # C5. Diversity: unique dishes per month
         if "_month" in rec.columns and "Recommended_Dish" in rec.columns:
