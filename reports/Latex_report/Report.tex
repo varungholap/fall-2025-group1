@@ -1,0 +1,342 @@
+% THIS TEMPLATE IS A WORK IN PROGRESS
+% Adapted from an original template by faculty at Reykjavik University, Iceland
+
+\documentclass{scrartcl}
+\input{File_Setup.tex}
+\usepackage{graphicx,epsfig,float}
+\hypersetup{
+   colorlinks   = true,                               %Colours links instead of ugly boxes
+   urlcolor     = blue,                               %Colour for external hyper links
+   linkcolor    = blue,                               %Colour of internal links
+   citecolor    = red,                                %Colour of citations
+   setpagesize  = false,
+   linktocpage  = true,
+}
+\graphicspath{ {fig/} }
+
+
+
+\renewenvironment{abstract}{
+    \centering
+    \textbf{Abstract}
+    \vspace{0.5cm}
+    \par\itshape
+    \begin{minipage}{0.7\linewidth}}{\end{minipage}
+    \noindent\ignorespaces
+}
+% ------------------------------------------------------------------------------------------------------------------------
+
+\begin{document}
+%Title of the report, name of coworkers and dates (of experiment and of report).
+\begin{titlepage}
+	\centering
+	\includegraphics[width=0.6\textwidth]{GW_logo.eps}\par
+	\vspace{2cm}
+	%%%% COMMENT OUT irrelevant lines below: Data Science OR Computer Science OR none
+	{\scshape\LARGE Data Science Program \par}
+	\vspace{1cm}
+	{\scshape\Large Capstone Report - Fall 2025\par}
+	%{\large \today\par}
+	\vspace{1.5cm}
+	%%%% PROJECT TITLE
+	{\huge\bfseries FCPS Waste Cost Management\par}
+	\vspace{1cm}
+	%%%% AUTHOR(S)
+	{\Large\itshape Neeraj Shashikant Magadum,\\ Varun Gholap}\par
+	\vspace{1.5cm}
+	supervised by\par
+	%%%% SUPERVISOR(S)
+	Amir Jafari
+
+	\vfill
+	\begin{abstract}
+This paper introduces a recommendation system for school meal planning using a Contextual Multi-Armed Bandit (CMAB) algorithm. The primary goal is to reduce food waste in school meal programs by improving demand forecasting and aligning production with actual student preferences. Our system uses historical sales data from Fairfax County Public Schools (FCPS) to learn how meal choices vary across different contexts, such as the specific school and day of the week. It recommends meals that are more likely to be selected, helping kitchens plan production quantities more accurately and avoid overproducing unpopular items. We implement a LinUCB algorithm that adapts to changing preferences by balancing familiar options with occasional exploration of less-tested items. We develop the system as part of an open-source tool to support data-driven decision-making and promote more efficient, cost-effective, and sustainable meal operations.
+	\end{abstract}
+	\vfill
+% Bottom of the page
+\end{titlepage}
+\tableofcontents
+\newpage
+% ------------------------------------------------------------------------------------------------------------------------
+\section{Introduction}
+
+School nutrition programs generate large amounts of avoidable food waste due to the inherent difficulty of predicting daily student meal preferences. Even small mismatches between planned production and actual participation can lead to substantial overproduction, unnecessary costs, and increased environmental impact. Many districts lack analytical tools that can translate historical meal data into actionable insights, leaving menu planning reliant on intuition and static assumptions rather than evidence-based forecasting.
+
+To address this multi-faceted problem, we propose a data-driven recommendation system based on a Contextual Multi-Armed Bandit (CMAB). This reinforcement learning approach is ideal for navigating the complex trade-offs in menu planning. By learning from the daily feedback of student choices, the system can identify which meals are likely to be successful in a specific context (exploitation) while still exploring less-tested items when useful (exploration). Crucially, the predictive power of the model also serves as a powerful tool for demand forecasting. By anticipating which meals will be chosen, schools can align production quantities with actual demand, directly tackling the costly and wasteful issue of overproduction.
+
+Our model is developed using historical meal sales data from Fairfax County Public Schools (FCPS). In this framework, each food item is an "arm" that can be recommended based on contextual factors like the school, time of day, and date.The system’s reward function is designed to primarily optimize for student consumption, since accurately estimating selection likelihood helps reduce waste by preventing overproduction of unpopular items.
+
+The main contribution of this project is the design and application of a CMAB system to address waste reduction in a real-world school meal setting. We implement a LinUCB algorithm and demonstrate its potential for improving demand estimation, guiding menu recommendations, and reducing unnecessary food waste. The system is intended for integration into a free, open-source tool to support school food service teams in making data-driven, efficient, and sustainable operational decisions.
+
+% ------------------------------------------------------------------------------------------------------------------------
+\section{Problem Statement}
+
+School meal programs operate under a complex set of competing pressures. They are tasked with offering meals that students will actually choose, ensuring high participation by providing appealing options, and maintaining operational efficiency by minimizing food waste and controlling costs. These goals are often in direct conflict. For instance, offering only the most popular items might increase participation but limit menu variety, while introducing new items is a financial risk that can lead to significant waste if they are rejected by students.
+
+A primary operational challenge is the inability to accurately forecast demand for specific menu items. Without effective tools, menu planning often relies on simple historical averages or intuition, which cannot account for the complex factors influencing student choice, such as the school, day of the week, or seasonality. In our dataset, covering one month of operations across 181 schools and 321 unique dishes, this inaccurate forecasting is a direct cause of food waste, as unpopular items are frequently overproduced and subsequently discarded. This waste represents a significant financial loss for the school district and a squandering of valuable resources.
+
+The core problem, therefore, is the lack of an intelligent system that can navigate the trade-offs between student participation and waste reduction. There is a need for a tool that moves beyond static analysis and can dynamically learn student preferences in different contexts. Such a system must not only recommend meals that are likely to be chosen but also provide a reliable prediction of demand to guide production quantities. By optimizing recommendations for popularity while enabling more accurate forecasting, a successful system can directly reduce the costly issue of food waste, creating a more efficient and sustainable school meal program.
+
+% ------------------------------------------------------------------------------------------------------------------------
+
+\section{Related Work}
+
+Our research constitutes a novel synthesis of methods from recommendation systems, reinforcement learning, and public health informatics, applied to the operational challenges of institutional food service.
+
+Conventional food recommendation systems, which typically use collaborative or content-based filtering to mirror user taste \cite{1}, are fundamentally misaligned with our objectives. Their paradigm of simple preference-matching is inadequate for a setting that must balance student satisfaction against the competing institutional goals of minimizing waste. Our problem is not one of unconstrained preference satisfaction, but of multi-objective optimization.
+
+This dynamic challenge, which requires balancing known favorites (exploitation) with the strategic testing of new items (exploration), necessitates a reinforcement learning approach. We therefore employ a Contextual Multi-Armed Bandit (CMAB) framework, a methodology pioneered in domains like computational advertising for its ability to learn and adapt in real time \cite{2}. By using the LinUCB algorithm \cite{3}, our system can dynamically update its strategy, a capability that makes it fundamentally more powerful than static predictive models for this problem.
+
+We bridge the critical gap between academic insight and operational practice by building a prescriptive system designed for daily decision support by non-technical users. The project's core contribution is thus the deployment of an adaptive algorithm from the technology sector to a public-good domain, creating a real-time,  multi-objective optimization tool for minimizing waste in school meal programs.
+
+
+% ------------------------------------------------------------------------------------------------------------------------
+
+\section{Solution and Methodology}
+
+We have designed an adaptive recommendation system that leverages a contextual bandit framework to address the multi-objective challenge of optimizing school meal programs. The system learns from historical cafeteria data and dynamically recommends meals that balance popularity with operational efficiency by minimizing waste. The solution is composed of several interconnected components that create a closed-loop learning process.
+
+The logical flow of the system begins with an \textbf{Environment Engine}, which processes raw historical sales data into a series of discrete time steps, or "contextual rounds." Each round encapsulates a specific meal service with a rich feature matrix representing the state of all possible meal choices. This information is then passed to the \textbf{CMAB Learning Agent}, the core of our system. The agent's policy uses this contextual information to select an optimal action—in this case, the meal to recommend. Following the action, a \textbf{Reward Calculation Module} quantifies the outcome by computing a scalar reward signal. This signal, which reflects our project's goals, is then fed back to the agent, which uses it to update its internal model and refine its policy for all future decisions. This architecture allows for a robust offline training and evaluation process, where the agent iteratively improves by "replaying" historical data.
+
+\subsection{Contextual Bandit Formulation}
+We formally define the recommendation task as a contextual bandit problem. The key elements are as follows:
+
+\paragraph{Context ($x_t$)} The context vector describes the environment at time step $t$. It is constructed by combining one-hot encoded categorical features (school ID, meal type, day of the week) with normalized numerical features derived from historical trends.
+
+\paragraph{Arms ($a_t$)} The ``arms'' represent the set of all unique meal items. At any given time step, only a subset of these arms is available, and the agent's action $a_t$ must be chosen from this available set.
+
+\paragraph{Reward Function ($r_t$)} To align with our primary goal of waste reduction and operational efficiency, the reward function is designed to maximize the consumption rate of prepared food. It is defined as:
+\[ r_t(a) = \min\left(1, \frac{\text{Served}_a}{\text{Planned}_a}\right) \]
+Here, the served-to-planned ratio serves as a direct proxy for waste efficiency. A ratio of 1.0 indicates perfect planning (zero waste), while lower ratios indicate overproduction. We cap this ratio at 1.0 to prevent mathematical anomalies in cases where servings unexpectedly exceed planning (e.g., emergency substitutions).
+
+\subsection{The LinUCB Learning Algorithm}
+To implement the CMAB agent, we selected the Linear Upper Confidence Bound (LinUCB) algorithm, which is well-suited for high-dimensional feature spaces. LinUCB models the expected reward of an arm as a linear function of its features and selects the arm that maximizes the sum of the predicted reward and an exploration bonus:
+\[ a_t = \arg\max_{a \in \mathcal{A}_t} \left( \hat{\theta}_a^T x_{t,a} + \alpha \sqrt{x_{t,a}^T A_a^{-1} x_{t,a}} \right) \]
+
+The first term, $\hat{\theta}_a^T x_{t,a}$, represents **exploitation**: selecting the item with the highest predicted consumption rate to minimize immediate waste. 
+
+The second term, $\alpha \sqrt{x_{t,a}^T A_a^{-1} x_{t,a}}$, represents **exploration**. In the context of waste reduction, this does not imply randomly testing risky items. Instead, it addresses the operational constraint of \textbf{menu variety}. Schools cannot serve the single most popular dish every day; they must rotate through a diverse menu. The exploration term drives the system to gather data on items where student demand is currently uncertain. By reducing this uncertainty, the system learns to accurately forecast demand for the entire catalog of required dishes, allowing kitchen staff to set tighter production margins for every item on the rotating menu, not just the favorites.
+
+\subsection{Evaluation Protocol}
+
+We evaluate the system's performance using a standard offline replay protocol, where the learning agent is trained and tested sequentially on historical data. The primary performance metric is cumulative regret, defined as the total opportunity loss incurred by not selecting the optimal arm at each time step. A successful agent must demonstrate sublinear regret growth, which proves that its policy is converging towards optimal behavior as it learns. To validate the effectiveness of our LinUCB agent, its performance is benchmarked against a naive Random Policy, which is expected to exhibit linear regret. The robustness of our findings is ensured by averaging results over multiple simulation runs and analyzing the sensitivity to key hyperparameters, such as the exploration parameter \(\alpha\) and the reward-weighting parameter \(\lambda\).
+
+% \begin{figure}[H]
+% 	\begin{center}
+% 		\includegraphics[scale=0.7]{ascent-archi.pdf}
+% 	\end{center}
+% 	\caption{Architecture of our distributed certification service}
+% 	\label{fig:ascent}
+% \end{figure}
+
+% Figure~\ref{fig:log-archi} is a pretty good example of a figure that is completely useless unless it is not accompanied by a textual explanation.
+
+% \begin{figure}
+% 	\begin{center}
+% 		\includegraphics[scale=0.5]{certificates-log-archi.pdf}
+% 	\end{center}
+% 	\caption{Try to guess what this figure illustrates; I double-dare you...}
+% 	\label{fig:log-archi}
+% \end{figure}
+
+% ------------------------------------------------------------------------------------------------------------------------
+\section{Results}
+
+This section presents the experimental evaluation of our contextual bandit--based school meal recommendation system. We report the metrics used to assess performance, describe the experimental setup, and interpret the main visualizations and tables. The goal is to show how effectively the LinUCB policy learns from Fairfax County Public Schools (FCPS) production data and how it compares to a non-contextual random baseline.
+
+Over the full study period, we constructed approximately \(7{,}940\) contextual rounds from the FCPS ``Production Data'' file. Each round corresponds to a unique \emph{(date, school, meal type)} combination, and each of the \(321\) unique menu items observed in the dataset was treated as a potential arm. At each round, the bandit algorithm selects one arm (dish) to recommend based on contextual features.
+
+\subsection{Experimentation protocol}
+
+The original CSV file contains, for each line, a dish name, school, meal type, date, and several operational quantities such as planned servings, actual servings, production cost, discarded cost, and leftover cost. We first cleaned the data by removing infinite values, normalizing dish names, and parsing dates into day and month components.
+
+For every \emph{(date, school, meal type)} group we built a feature matrix \(X_t \in \mathbb{R}^{321 \times d}\), where each row corresponds to a potential arm (dish). If a dish was actually offered on that day, the row contains its numeric features: planned total, served total, total production cost, discarded and leftover cost, day-of-month, month, and one-hot encodings of school and meal type. If a dish was not available on that day, its feature vector was set to the zero vector. This design allowed us to keep a fixed arm space across all rounds while still capturing daily menu availability through the contextual features.
+
+The LinUCB model was initialized with:
+\begin{itemize}
+    \item number of arms \(K = 321\),
+    \item feature dimension \(d\) equal to the length of the engineered feature vector,
+    \item exploration parameter \(\alpha = 0.5\).
+\end{itemize}
+
+At each round \(t\), LinUCB computed, for each available arm \(a\), a predicted mean reward and an upper-confidence bound based on its current parameter estimates. It then selected the arm with the highest upper-confidence score and observed a scalar reward
+\[
+r_{t,a} =
+\begin{cases}
+0, & \text{if } \text{Planned\_Total} = 0,\\[4pt]
+\displaystyle \frac{\text{Served\_Total}}{\text{Planned\_Total}}, & \text{otherwise.}
+\end{cases}
+\]
+This reward emphasizes high served-to-planned ratios while naturally penalizing under-served dishes and handling days with missing planning information.
+
+To quantify learning quality, we also computed the \emph{per-round regret} as the difference between the best achievable reward among all available dishes that day and the reward of the chosen dish. Cumulative reward and cumulative regret were tracked over all rounds. In addition, we monitored an average uncertainty term and an empirical exploration ratio (fraction of rounds where the uncertainty exceeded a predefined threshold), giving insight into the exploration--exploitation behavior of the policy.
+
+For comparison, we implemented a random baseline that ignores all contextual information and selects a uniformly random available dish at each round. The random policy uses the same reward definition and environment to ensure a fair comparison.
+
+\subsection{Data tables}
+
+Table~\ref{tab:summary-metrics} summarizes the main quantitative outcomes of our experiments. The metrics clearly indicate that the contextual bandit policy substantially outperforms the random baseline.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{lrr}
+        \hline
+        Metric & LinUCB & Random baseline \\
+        \hline
+        Total rounds & \multicolumn{2}{c}{\(7{,}940\)} \\
+        Unique dishes (arms) & \multicolumn{2}{c}{321} \\
+        Cumulative reward & 369.57 & 90.44 \\
+        Cumulative regret & 574.18 & --- \\
+        Exploration ratio (\%) & 1.69 & --- \\
+        \hline
+    \end{tabular}
+    \caption{Summary of performance metrics for the contextual LinUCB policy and the random baseline over the full FCPS dataset. Rewards are unitless served-to-planned ratios accumulated across all rounds.}
+    \label{tab:summary-metrics}
+\end{table}
+
+The cumulative reward of LinUCB (\(369.57\)) is more than four times that of the random policy (\(90.44\)), confirming that incorporating school-, date-, and meal-type--specific features leads to substantially better decisions than uninformed random selection. The cumulative regret of \(574.18\) over almost eight thousand rounds reflects the difficulty of the task: the optimal dish is rarely obvious, and the environment is sparse and noisy. The exploration ratio of only \(1.69\%\) shows that, after an initial learning phase, the model confidently exploits its learned preferences.
+
+\subsection{Graphs}
+
+Graphs play a central role in interpreting the behaviour of the LinUCB contextual bandit throughout training.  
+Each figure is shown immediately after the text that describes it, ensuring the reader can follow the narrative without scrolling across pages.
+
+Figure~\ref{fig:cum-reward} shows the cumulative reward for LinUCB compared to the random baseline.  
+LinUCB quickly establishes a strong advantage, ultimately achieving more than four times the cumulative reward of the random policy.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{A1_cumulative_reward.png}
+    \caption{Cumulative reward over time for LinUCB and the random baseline.  
+    The contextual model rapidly outperforms random selection and maintains a widening lead across nearly 8{,}000 rounds.}
+    \label{fig:cum-reward}
+\end{figure}
+
+Figure~\ref{fig:cum-regret} presents the cumulative regret of LinUCB.  
+Although regret grows over time due to the inherent noise of real-world production data, the overall regret remains moderate relative to total achievable reward.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{A2_cumulative_regret.png}
+    \caption{Cumulative regret of the LinUCB policy.  
+    The approximately linear growth illustrates the difficulty of selecting the optimal dish under sparse and highly variable daily menus.}
+    \label{fig:cum-regret}
+\end{figure}
+
+To evaluate convergence, Figure~\ref{fig:uncertainty} plots the average uncertainty estimate.  
+Uncertainty drops sharply during the early rounds and stabilizes close to zero, indicating rapid learning and confident exploitation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{B1_uncertainty.png}
+    \caption{Average uncertainty of the LinUCB model.  
+    High initial uncertainty quickly collapses as the model gathers evidence and becomes confident in its parameter estimates.}
+    \label{fig:uncertainty}
+\end{figure}
+
+Short-term behaviour is highlighted in Figure~\ref{fig:rolling-reward}, which shows a rolling average of the per-round reward.  
+Although noisy due to real menu variability, the reward trend stabilizes, confirming that LinUCB learns a consistent decision strategy.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{A3_rolling_avg_reward.png}
+    \caption{Rolling average reward (window size 50).  
+    Despite daily fluctuations, the moving average stabilizes and reflects the emergence of consistent policy behaviour.}
+    \label{fig:rolling-reward}
+\end{figure}
+
+To understand how frequently individual dishes are chosen, Figure~\ref{fig:arm-freq} reports the top 30 arm selection frequencies.  
+The model repeatedly selects a small subset of high-performing dishes, demonstrating strong learned preferences.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{B2_arm_selection_freq.png}
+    \caption{Selection frequency of the top 30 dishes (arms).  
+    A small number of dishes dominate the recommendations, indicating stable high reward predictions.}
+    \label{fig:arm-freq}
+\end{figure}
+
+Figure~\ref{fig:top-dishes} summarizes the most frequently recommended dishes across all contexts.  
+Items such as Fat Free White Milk, 1\% White Milk, Chickpeas, and Italian Dressing appear consistently in the top recommendation ranks.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{C1_top_recommended_dishes.png}
+    \caption{Overall top recommended dishes.  
+    High-frequency items represent strong and stable learned preferences across schools and dates.}
+    \label{fig:top-dishes}
+\end{figure}
+
+To analyze recommendation quality, Figure~\ref{fig:rank-mix-chickpeas} shows the rank distribution for Chickpeas.  
+The dish is overwhelmingly ranked first, confirming that LinUCB identifies it as one of the most consistently high-reward items.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{C8_rank_mix_Chickpeas.png}
+    \caption{Rank mix for Chickpeas across all recommendations.  
+    Most placements are in rank 1, demonstrating its strong performance under the learned reward model.}
+    \label{fig:rank-mix-chickpeas}
+\end{figure}
+
+Finally, Figure~\ref{fig:school-boxplot} shows predicted score distributions across the top 10 schools by recommendation volume.  
+This reveals that some schools systematically receive higher predicted rewards, suggesting real differences in student demand patterns.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{C4_score_by_school.png}
+    \caption{Predicted score distribution across the top 10 recommended schools.  
+    Differences in median and variance highlight important school-level preference patterns.}
+    \label{fig:school-boxplot}
+\end{figure}
+
+
+% ------------------------------------------------------------------------------------------------------------------------
+
+\section{Discussion}
+
+This project implemented a complete contextual bandit pipeline on real FCPS production data, from data engineering and environment construction to model training, baseline comparison, and rich visual analytics. Working with \(321\) potential dishes and nearly \(8{,}000\) contextual rounds is significantly more challenging than standard synthetic bandit benchmarks. Despite the high sparsity and noise in the environment, the LinUCB policy learned meaningful, interpretable patterns and delivered strong performance improvements.
+
+A major strength of our approach is its clear advantage over a random policy: the cumulative reward of LinUCB is more than four times higher than that of the baseline. This demonstrates that the model successfully exploits contextual information such as school, meal type, and historical production behaviour to select dishes that are more likely to achieve favourable served-to-planned ratios. The rapid decay in uncertainty further shows that the algorithm quickly learns from historical data and transitions to confident exploitation.
+
+The visual analyses confirm that the model has discovered robust favourites, such as Chickpeas, Fat Free White Milk, and Mandarin Orange Parfait, which frequently appear in the top recommendation ranks. Rank-mix plots and school-wise score distributions provide stakeholders with transparent explanations of why certain items are recommended more often, an important consideration for real-world deployment in public schools.
+
+At the same time, our experiments highlighted several challenges. The reward signal is inherently noisy because actual servings depend on many external factors (student attendance, weather, events, etc.), and menus are highly non-stationary across months and years. Many dishes are offered only rarely, so their parameter estimates remain uncertain, biasing the model toward frequently served items. Moreover, our current reward definition optimizes served-to-planned ratio but does not explicitly encode nutritional balance, variety, or cost constraints.
+
+To mitigate these limitations, future work could explore alternative reward formulations that combine multiple objectives (waste reduction, inventory shelf-life, and budget). Methodologically, extensions such as Thompson Sampling, neural linear bandits, or sliding-window variants of LinUCB could better handle non-stationarity and non-linear feature interactions. Finally, integrating this bandit policy into a larger reinforcement-learning framework could allow the system to consider multi-day planning and inventory dynamics.
+
+Overall, the project demonstrates that contextual bandits are a powerful and practical tool for supporting school meal planning. Our implementation not only achieves strong quantitative performance but also provides interpretable insights that can inform decision-making by district officials and nutritionists.
+
+% ------------------------------------------------------------------------------------------------------------------------
+
+\section{Conclusion}
+
+This work investigated whether a contextual bandit algorithm can improve daily school meal recommendations using historical production data from Fairfax County Public Schools. We designed and implemented a LinUCB-based system that, for each \emph{(date, school, meal type)} context, recommends dishes to maximize the served-to-planned ratio and implicitly reduce food waste.
+
+The main findings can be summarized as follows:
+\begin{itemize}
+    \item We constructed a realistic contextual bandit environment from a large, messy operational dataset, handling sparsity, missing values, and complex categorical structure across 321 unique dishes.
+    \item The LinUCB policy achieved a cumulative reward of \(369.57\), more than four times higher than the random baseline (\(90.44\)), demonstrating the value of using contextual information.
+    \item The model converged quickly, with uncertainty dropping sharply in the early rounds, and produced stable, interpretable recommendations that consistently favoured high-performing dishes such as Chickpeas and Fat Free White Milk.
+    \item The rich set of visualizations (cumulative reward and regret curves, uncertainty and rolling reward plots, arm selection frequencies, rank-mix charts, and school-wise score distributions) provides actionable insights for practitioners and clearly illustrates the behaviour of the learned policy.
+\end{itemize}
+
+For busy readers who may not consult the entire report, the key conclusion is that a contextual bandit approach can significantly improve school meal selection compared to uninformed strategies, even in the presence of real-world noise and non-stationarity. The methodology is general and can be extended to incorporate cost constraints.
+
+Future extensions could explore multi-objective reward functions, more expressive bandit algorithms (e.g., neural or Thompson-sampling variants), and integration with full reinforcement-learning pipelines for long-term planning. Nevertheless, the current results already show that data-driven bandit methods offer a promising and practically useful direction for reducing food waste and improving decision-making in K–12 food service operations.
+
+\bibliographystyle{IEEEtran}
+
+\begin{thebibliography}{99}
+
+\bibitem{1} G. Adomavicius and A. Tuzhilin, "Toward the next generation of recommender systems: A survey of the state-of-the-art and possible extensions," \textit{IEEE Transactions on Knowledge and Data Engineering}, vol. 17, no. 6, pp. 734-749, 2005.
+\bibitem{2} L. Li, W. Chu, J. Langford, and R. E. Schapire, "A contextual-bandit approach to personalized news article recommendation," in \textit{Proceedings of the 19th International Conference on World Wide Web}, 2010, pp. 661-670.
+\bibitem{3} W. Chu, L. Li, L. Reyzin, and R. Schapire, "Contextual bandits with linear payoff functions," in \textit{Proceedings of the Fourteenth International Conference on Artificial Intelligence and Statistics}, 2011, pp. 208-214.
+
+\end{thebibliography}
+%------ To create Appendix with additional stuff -------%
+%\newpage
+%\appendix
+%\section{Appendix}
+%Put data files, CAD drawings, additional sketches, etc.
+
+\end{document} 

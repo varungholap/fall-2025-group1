@@ -23,10 +23,11 @@
 
             Integrate this CMAB-based recommendation system into an open source library for school nutrition 
             research, so that future stakeholders can use your methodology to make healthier, data-informed decisions. 
+
+## How to Run
+For instructions on how to run the project, please see [RUN.md](RUN.md).
             
 
-![Figure 1: Example figure](2025_Fall_5.png)
-*Figure 1: Caption*
 
 ## 2 Dataset:  
 
