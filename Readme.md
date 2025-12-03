@@ -1,218 +1,157 @@
-Health-Aware School Meal Recommendations with Contextual Bandits
-Capstone Project – The George Washington University
+# Capstone Proposal
+## Health-Aware School Meal Recommendations with Contextual Bandits
+### Authors: Neeraj Shashikant Magadum, Varun Gholap
+### Advisor: Prof. Amir Jafari
+#### The George Washington University, Washington DC
+#### M.S. in Data Science – Fall 2025
+## Overview
+        This project introduces an adaptive recommendation system for K–12 school meal 
+        planning using Contextual Multi-Armed Bandits (CMAB). The system helps school 
+        nutrition staff optimize three competing objectives:
 
-Authors: Neeraj Shashikant Magadum, Varun Gholap
-Advisor: Prof. Amir Jafari
-Program: M.S. in Data Science
-Semester: Fall 2025
+        - Improve student health by recommending nutritious meals  
+        - Increase participation through appealing food choices  
+        - Reduce food waste by aligning production with estimated demand  
 
-Overview
+        Using historical production data from Fairfax County Public Schools (FCPS), the 
+        system learns student preferences in context (school, date, meal type) and 
+        recommends meals that balance popularity and nutritional value. The LinUCB 
+        algorithm is used to dynamically update recommendations while balancing 
+        exploration and exploitation.
 
-This project introduces an adaptive recommendation system for K–12 school meal planning using Contextual Multi-Armed Bandits (CMAB). The system helps school nutrition staff optimize three competing objectives:
+        The project aims to develop an open-source tool that empowers non-technical school 
+        nutrition professionals and researchers to make data-driven decisions for healthier, 
+        more sustainable school meal programs.
 
-Improve student health by recommending nutritious meals
+## Objective
+        The goal of this project is to create a free and open-source CMAB-based 
+        recommendation tool usable by:
 
-Increase participation through appealing food choices
+        - School nutritionists  
+        - Cafeteria managers  
+        - District administrators  
+        - Researchers  
 
-Reduce food waste by aligning production with estimated demand
+        The system recommends meals that optimize health, participation, and waste 
+        reduction by:
 
-Using historical production data from Fairfax County Public Schools (FCPS), our system learns student preferences in context (school, date, meal type) and recommends meals that balance popularity and nutritional value. The underlying algorithm, LinUCB, adaptively updates its recommendations using reinforcement learning principles.
+        - Learning student preferences across contexts  
+        - Balancing exploration vs. exploitation  
+        - Encouraging nutrient-dense meal options  
+        - Forecasting demand more accurately  
 
-This project is being developed as an open-source tool to empower non-technical school nutritionists and researchers to make data-informed decisions.
+        The broader goal is to provide an accessible research and operational tool for 
+        data-driven school nutrition planning.
 
-Table of Contents
+## Dataset
+        The dataset consists of production and sales records from Fairfax County 
+        Public Schools (FCPS). Each row includes:
 
-Objective
+        - School  
+        - Date  
+        - Meal type  
+        - Dish name  
+        - Planned servings  
+        - Actual servings  
+        - Production cost  
+        - Waste (discarded + leftover cost)  
 
-Dataset
+        Dataset summary:
 
-Rationale
+        - 7,940 contextual rounds  
+        - 321 unique menu items (arms)  
+        - Data spans multiple schools and meal services  
 
-System Architecture & Methodology
+## Rationale
+        School nutrition teams face a difficult challenge:
 
-Contextual Bandit Formulation
+        - Healthy meals may be unpopular  
+        - Popular meals may not meet nutrition standards  
+        - Overproduction leads to food waste and financial loss  
+        - Staff often lack advanced analytics tools  
 
-LinUCB Learning Algorithm
+        A contextual bandit approach enables:
 
-Evaluation Protocol
+        - Learning preferences for each school, date, and meal context  
+        - Safe exploration of healthier alternatives  
+        - Improved demand forecasting  
+        - Interpretable recommendations  
 
-Results
+        This project bridges public health nutrition with reinforcement learning, 
+        producing a practical analytics tool for real-world school meal planning.
 
-Discussion
-
-Conclusion
-
-How to Run
-
-Project Timeline
-
-Contact
-
-Objective
-
-The goal of this project is to create a free and open-source CMAB-based recommendation tool that can be used by:
-
-School nutritionists
-
-Cafeteria managers
-
-District administrators
-
-Researchers
-
-The system recommends meals that optimize student health, participation, and waste reduction by:
-
-Learning student preferences across contexts
-
-Balancing exploration vs. exploitation
-
-Encouraging nutrient-dense meal options
-
-Forecasting demand more accurately
-
-The broader aim is to build an accessible research tool capable of supporting data-driven school nutrition planning.
-
-Dataset
-
-We use production and sales data provided by Fairfax County Public Schools (FCPS).
-
-Each row includes:
-
-School
-
-Date
-
-Meal type
-
-Dish name
-
-Planned servings
-
-Actual servings
-
-Production cost
-
-Waste (discarded + leftover cost)
-
-Over the full dataset:
-
-7,940 contextual rounds
-
-321 unique dishes (arms)
-
-Data spans multiple schools and meal services
-
-Rationale
-
-School nutrition teams face a difficult challenge:
-
-Healthy meals may be unpopular
-
-Popular meals may not meet nutrition goals
-
-Overproduction leads to food waste and financial loss
-
-Staff usually lack advanced analytics tools
-
-A contextual bandit approach allows dynamic, real-time decision-making:
-
-Learns which meals perform well in each school context
-
-Encourages exploration of healthier alternatives
-
-Predicts demand to minimize waste
-
-Provides interpretable recommendations for non-technical users
-
-This project bridges public health nutrition and reinforcement learning, producing a practical tool for school operations.
-
-System Architecture & Methodology
-
-The pipeline consists of several modules:
+## System Architecture & Methodology
+        The system pipeline consists of five major components:
 
 1. Environment (utils/env.py)
+        Constructs contextual rounds from FCPS data.
 
-Construct contextual rounds from FCPS data.
-
-load_data() – load cleaned CSV
-
-get_states() – feature matrices for each round
-
-get_actions() – available meals at each time step
-
-get_health_scores() – nutrition-based scoring per meal
+        - load_data() → Load cleaned CSV  
+        - get_states() → Create feature matrices  
+        - get_actions() → Define valid arms per time step  
+        - get_health_scores() → Provide nutrition scores for dishes  
 
 2. Bandit Model (model.py)
+        Implements the LinUCB contextual bandit algorithm.
 
-Implements the full LinUCB algorithm.
-
-action() – choose optimal arm
-
-train() – iteratively update parameters
-
-calculate_reward() – served-to-planned ratio (+ health factor)
-
-update() – ridge regression update
-
-reset() – clear parameters
-
-save() – persist model
-
-recommend() – generate recommendations
+        - action() → Select optimal arm  
+        - train() → Run offline replay  
+        - calculate_reward() → Compute served-to-planned ratio (+ health factor)  
+        - update() → Ridge regression update  
+        - reset() → Clear model parameters  
+        - save() → Save learned model  
+        - recommend() → Generate recommendations  
 
 3. Driver Script (main.py)
+        Coordinates the environment and the model:
 
-Coordinates environment + model for full training loop.
+        - Loads dataset  
+        - Iterates through contextual rounds  
+        - Trains LinUCB  
+        - Evaluates and logs performance  
 
-4. Evaluation Tools (utils/metrics.py / utils/plot.py)
+4. Evaluation Tools (utils/metrics.py, utils/plot.py)
+        Metrics:
 
-Cumulative reward
+        - Cumulative reward  
+        - Cumulative regret  
+        - Exploration ratio  
+        - Rolling averages  
+        - Arm selection frequency  
+        - Rank distribution  
 
-Cumulative regret
+        Visualizations include:
 
-Moving averages
-
-Exploration metrics
-
-Arm-selection frequencies
-
-Rank distribution plots
+        - Reward & regret curves  
+        - Uncertainty decay  
+        - Rolling reward  
+        - Top recommended dishes  
+        - School-level score distributions  
 
 5. Benchmarking (benchmark.py)
+        Provides systematic experimentation:
 
-Runs 10+ trials
-
-Compares multiple α (exploration) values
-
-Sweeps λ (health weighting) values
-
-Saves results to CSV
+        - 10+ repeated trials  
+        - Comparison across α values (exploration)  
+        - Sweeps over λ (health weighting)  
+        - Saves all results to CSV  
 
 Contextual Bandit Formulation
+        At each round t, the model receives a "context":
 
-At each round t, the model receives:
+        - One-hot encoded school  
+        - Meal type  
+        - Date features (day, month)  
+        - Planned & served quantities  
+        - Production and waste cost metrics  
 
-Context
+        Arms:
 
-Feature vector combining:
+        - All 321 menu items, masked by availability  
 
-One-hot encoded school
+## Reward
 
-Meal type
-
-Day of week, month
-
-Planned & served quantities
-
-Production and waste costs
-
-Arms
-
-All 321 unique menu items, masked by daily availability.
-
-Reward
-
-The default reward:
+Default reward:
 
 if Planned_Total == 0:
     reward = 0
@@ -220,180 +159,135 @@ else:
     reward = Served_Total / Planned_Total
 
 
-Extended health-aware reward:
+Health-aware reward:
 
 reward = (1 - λ) * (Served / Planned) + λ * Health_Score
 
 LinUCB Learning Algorithm
 
-The predicted reward for arm a:
+Predicted reward for arm a:
 
 score = θᵀx + α * sqrt(xᵀA⁻¹x)
 
 
-Where:
-
-θ – learned parameter weights
-
-A – design matrix (updated per arm)
-
-α – exploration parameter
-
-After observing reward r, LinUCB updates:
+Parameter updates:
 
 A_a ← A_a + x xᵀ
 b_a ← b_a + r x
 θ_a = A_a⁻¹ b_a
 
-Evaluation Protocol
+## Evaluation Protocol
+        Offline replay evaluation:
 
-Evaluation uses offline replay, where:
+        - Observe historical context  
+        - Choose an arm  
+        - Look up historical reward  
+        - Compute regret vs. the optimal arm for that round  
+        - Track cumulative metrics  
 
-Model observes historical context
+        Baseline:
+        - Random Policy (uniform random among available dishes)
 
-Chooses an arm
+        Metrics:
+        - Cumulative reward  
+        - Cumulative regret  
+        - Exploration ratio  
+        - Uncertainty  
+        - Arm frequencies  
 
-Receives reward from actual historical data
+## Results
+### Summary Table
 
-Computes regret vs. optimal arm that day
+| Metric              | LinUCB | Random Baseline |
+|---------------------|--------|-----------------|
+| Total rounds        | 7,940  | 7,940           |
+| Unique dishes       | 321    | 321             |
+| Cumulative reward   | 369.57 | 90.44           |
+| Cumulative regret   | 574.18 | —               |
+| Exploration ratio   | 1.69%  | 100%            |
 
-Metrics:
+## Key takeaway:
+LinUCB achieved over 4× higher cumulative reward compared to the random baseline.
 
-Cumulative reward
+Major Findings
+        - Rapid convergence: uncertainty → 0 early  
+        - A small set of high-performing dishes dominates  
+        - Chickpeas, Fat-Free Milk, Italian Dressing rank consistently top  
+        - Rolling average reward stabilizes over time  
+        - School-level patterns reveal meaningful demand differences  
 
-Cumulative regret
 
-Exploration ratio
+## Plots (see /utils/plot.py):
 
-Uncertainty decay
+        - Cumulative reward & regret  
+        - Uncertainty decay  
+        - Rolling reward  
+        - Arm-selection frequency  
+        - Rank distribution per dish  
+        - School-wise prediction distributions  
 
-Selection frequency
+## Discussion
+        The contextual bandit approach works well even with:
 
-Baseline: Random Policy (uniform random valid arm).
+        - Sparse data  
+        - Noise in planning and serving metrics  
+        - Strong variability across dates and schools  
 
-Results
-Summary Table
-Metric	LinUCB	Random Baseline
-Total rounds	7,940	7,940
-Unique dishes	321	321
-Cumulative reward	369.57	90.44
-Cumulative regret	574.18	—
-Exploration ratio	1.69%	—
+## Strengths
+        - Major performance improvement over baseline  
+        - Clear convergence behavior  
+        - Transparent, interpretable recommendations  
+        - Actionable insights for school nutrition planning  
 
-Key takeaway:
-LinUCB achieved more than 4× the cumulative reward of the random policy.
+## Challenges
+        - Reward noise due to attendance/weather  
+        - Non-stationary student preferences  
+        - Rare dishes remain poorly estimated  
+        - Current reward lacks multi-objective considerations  
 
-Major findings
+## Future Extensions
+        - Multi-objective reward functions  
+        - Neural bandits / Thompson sampling  
+        - Sliding-window or decayed learning  
+        - Multi-day planning using full RL  
+        - Integrating menu budgets and USDA nutrition compliance  
 
-LinUCB rapidly converges (uncertainty → 0 early)
+## Conclusion
+        This project demonstrates that LinUCB contextual bandits significantly 
+        outperform uninformed strategies for K–12 school meal recommendations.
 
-A small set of high-performing dishes dominate recommendations
 
-Chickpeas, Fat-Free Milk, Italian Dressing were consistently top-ranked
+## Key conclusions:
 
-Reward moving average stabilizes over time
+        - 4× higher cumulative reward than random  
+        - Stable, interpretable recommendations  
+        - Insightful modeling of student preference patterns  
+        - Strong potential for real-world waste reduction  
+        - A practical foundation for future decision-support tools  
 
-School-level patterns indicate real differences in demand
+## How to Run
 
-All plots are implemented in /utils/plot.py:
-
-Cumulative reward & regret
-
-Uncertainty vs. rounds
-
-Rolling average reward
-
-Arm-selection frequencies
-
-Rank distribution for specific dishes
-
-School-wise score distributions
-
-Discussion
-
-Our study demonstrates that a contextual bandit is a powerful tool for school meal optimization, even in a real-world dataset that is:
-
-Sparse
-
-Noisy
-
-Highly variable across time
-
-Strengths
-
-Major reward improvement over baseline
-
-Clear convergence behavior
-
-Interpretable arm preferences
-
-Provides actionable insights to administrators
-
-Challenges
-
-Reward signal influenced by external factors (attendance, weather, events)
-
-Non-stationary student preferences
-
-Many items appear too rarely to learn strong estimates
-
-Current reward does not include cost/variety/nutritional constraints explicitly
-
-Future improvements
-
-Multi-objective reward functions
-
-Thompson Sampling, Neural Bandits
-
-Sliding-window or discounting for non-stationarity
-
-Multi-day planning via full RL environment
-
-Integration with menu management dashboards
-
-Factoring nutrition, budget, and USDA compliance into policy
-
-Conclusion
-
-This project successfully demonstrates that LinUCB contextual bandits significantly outperform uninformed strategies in recommending K–12 school meals.
-
-Key conclusions:
-
-LinUCB achieved 4× higher cumulative reward than random
-
-Learned stable, interpretable recommendations
-
-Provided deep insight into student food preference patterns
-
-Can help reduce waste and improve participation
-
-Can form the foundation of a practical decision-support tool
-
-Bandit-based decision systems hold real promise for school nutrition optimization, and this work provides a strong foundation for continued development.
-
-How to Run
-
-Full instructions are provided in:
-RUN.md
+Full instructions in **[RUN.md](RUN.md)**
 
 Typical workflow:
 
 python main.py          # Train & evaluate LinUCB
 python benchmark.py     # Run benchmarking trials
 
-Project Timeline
-Component	Duration
-RL Framework	1 week
-Environment (env.py)	2 weeks
-Model (model.py, main.py)	5 weeks
-Metrics & Plots	2 weeks
-Benchmarking	2 weeks
-Research Paper Writing	Parallel to metrics/plots
-Contact
+## Project Timeline
+| Component                | Duration |
+|--------------------------|----------|
+| RL Framework             | 1 week   |
+| Environment (env.py)     | 2 weeks  |
+| Model (model.py, main.py)| 5 weeks  |
+| Metrics & Plots          | 2 weeks  |
+| Benchmarking             | 2 weeks  |
+| Research Paper Writing   | Parallel |
 
-Advisor:
+
+## Advisor:
 Prof. Amir Jafari
 Email: ajafari@gwu.edu
 
-Contributor:
+## Contributor:
 Varun Gholap – varung@gwu.edu
