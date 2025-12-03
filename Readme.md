@@ -1,5 +1,5 @@
-# Capstone Proposal
-## FCPS Waste Cost Reduction with Contextual Multi-Armed Bandits
+# FCPS Waste Cost Reduction with Contextual Multi-Armed Bandits 
+
 ### Authors: Neeraj Shashikant Magadum, Varun Gholap
 ### Advisor: Prof. Amir Jafari, Prof. Tyler Wallett
 #### The George Washington University, Washington DC
