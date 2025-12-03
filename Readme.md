@@ -207,33 +207,6 @@ The `EDA.ipynb` notebook contains the initial exploratory data analysis performe
 
 Full instructions in **[RUN.md](RUN.md)**
 
-## Replication
-
-To replicate this work, follow these steps:
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository_url>
-    cd <repository_name>
-    ```
-
-2.  **Set up the environment:**
-    -   Create a virtual environment:
-        ```bash
-        python3 -m venv venv
-        source venv/bin/activate
-        ```
-    -   Install the required dependencies:
-        ```bash
-        pip install -r requirements.txt
-        ```
-
-3.  **Set up environment variables:**
-    -   Rename `.env.example` to `.env`.
-    -   Add any required environment variables to the `.env` file.
-
-4.  **Run the code:**
-    -   Follow the instructions in [RUN.md](RUN.md) to run the experiments.
 
 ## Project Overview Video
 [Watch our 1-minute project overview (video/mp4)](demo/fig/video.mp4)
