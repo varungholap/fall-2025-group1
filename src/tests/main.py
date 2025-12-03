@@ -29,7 +29,7 @@ random_model.train(training_data)
 rnd_hist = simulate_random_baseline(training_data)
 
 # Define the output path for the recommendations CSV
-output_file_path = os.path.abspath(os.path.join(src_path, '../reports/recommendations.csv'))
+output_file_path = os.path.abspath(os.path.join(src_path, '../reports/recommendations/recommendations.csv'))
 
 # Generate and save recommendations
 model.generate_and_display_all_recommendations(env_rounds, metadata, unique_dishes, top_k=3, output_path=output_file_path)
