@@ -204,7 +204,7 @@ Full instructions in **[RUN.md](RUN.md)**
 ## Advisor:
 1. Prof. Amir Jafari - Email: ajafari@gwu.edu
 
-2. Tyler Wallet - Email: twallett@gwmail.gwu.edu
+2. Prof. Tyler Wallet - Email: twallett@gwmail.gwu.edu
 
 ## Contributor:
 1. Varun Gholap - varun.gholap@gwu.edu
