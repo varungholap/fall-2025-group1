@@ -187,6 +187,9 @@ Major Findings
 
 Full instructions in **[RUN.md](RUN.md)**
 
+## Project Overview Video
+[Watch our 1-minute project overview (video/mp4)](demo/fig/video.mp4)
+
 ## Project Timeline
 | Component                | Duration |
 |--------------------------|----------|
