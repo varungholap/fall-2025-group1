@@ -1,5 +1,9 @@
-## Instruction for code folder
+# src
 
-- All classes and functions need to be in component folder
-- Main loop code needs to be in the main loop code folder.
-- All codes need to have docstrings and hints.
+This directory contains all the source code for the project.
+
+## Directory Structure
+
+-   `component/`: This directory contains reusable components, such as classes and functions, that are used throughout the project.
+-   `tests/`: This directory contains all the tests for the source code.
+

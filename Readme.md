@@ -183,9 +183,30 @@ Major Findings
         - Rolling average reward stabilizes over time  
         - School-level patterns reveal meaningful demand differences   
 
+## Exploratory Data Analysis (EDA)
+
+The `EDA.ipynb` notebook contains the initial exploratory data analysis performed on the dataset. It includes visualizations and summaries of the data to understand its characteristics and identify patterns before building the recommendation model.
+
+## Project Structure
+
+    .
+    ├── data/                # Contains the dataset
+    ├── demo/                # Demo video
+    ├── presentation/        # Project presentation slides
+    ├── reports/             # Project reports and plots
+    ├── research_paper/      # Research paper
+    ├── src/                 # Source code
+    │   ├── component/       # Reusable components
+    │   └── tests/           # Tests
+    ├── EDA.ipynb            # Exploratory Data Analysis
+    ├── Readme.md            # This file
+    ├── requirements.txt     # Python dependencies
+    └── RUN.md               # Instructions to run the project
+
 ## How to Run
 
 Full instructions in **[RUN.md](RUN.md)**
+
 
 ## Project Overview Video
 [Watch our 1-minute project overview (video/mp4)](demo/fig/video.mp4)
