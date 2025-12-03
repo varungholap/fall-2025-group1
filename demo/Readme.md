@@ -1,3 +1,7 @@
-## Instruction for demo code
+# Demo
 
-- The streamlit or any UI app needs to be here in this folder.
+This directory contains a Video Overview of the project.
+
+## Contents
+
+-   `fig/video.mp4`: A short video demonstrating the project Overview.
