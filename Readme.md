@@ -1,7 +1,7 @@
 # Capstone Proposal
 ## FCPS Waste Cost Reduction with Contextual Multi-Armed Bandits
 ### Authors: Neeraj Shashikant Magadum, Varun Gholap
-### Advisor: Prof. Amir Jafari
+### Advisor: Prof. Amir Jafari, Prof. Tyler Wallet
 #### The George Washington University, Washington DC
 #### M.S. in Data Science – Fall 2025
 
@@ -72,7 +72,7 @@
         to produce a practical waste-reduction solution.
 
 ## System Architecture & Methodology
-        The pipeline contains five major components:
+        The pipeline contains four major components:
 
 1. Environment (utils/env.py)
         Builds contextual rounds from FCPS data.
@@ -130,15 +130,13 @@
         - All 321 dishes, masked by daily availability  
 
 ## Reward
-
-Default reward:
-
 ```python
+Default reward:
 if Planned_Total == 0:
     reward = 0
 else:
     reward = Served_Total / Planned_Total
-
+```
 Parameter updates:
 
 A_a ← A_a + x xᵀ
@@ -189,11 +187,6 @@ Major Findings
 
 Full instructions in **[RUN.md](RUN.md)**
 
-Typical workflow:
-
-python main.py          # Train & evaluate LinUCB
-python benchmark.py     # Run benchmarking trials
-
 ## Project Timeline
 | Component                | Duration |
 |--------------------------|----------|
@@ -201,14 +194,16 @@ python benchmark.py     # Run benchmarking trials
 | Environment (env.py)     | 2 weeks  |
 | Model (model.py, main.py)| 5 weeks  |
 | Metrics & Plots          | 2 weeks  |
-| Benchmarking             | 2 weeks  |
+| Benchmarking             | 1 weeks  |
 | Research Paper Writing   | Parallel |
 
 
 ## Advisor:
-Prof. Amir Jafari
-Email: ajafari@gwu.edu
+1. Prof. Amir Jafari - Email: ajafari@gwu.edu
+
+2. Tyler Wallet - Email: twallett@gwmail.gwu.edu
 
 ## Contributor:
-Varun Gholap - varun.gholap@gwu.edu
-Neeraj Magdum - neerajshashikant.magadum@gwu.edu
+1. Varun Gholap - varun.gholap@gwu.edu
+
+2. Neeraj Magdum - neerajshashikant.magadum@gwu.edu
